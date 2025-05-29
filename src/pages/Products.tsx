@@ -201,7 +201,7 @@ export default function Products() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((product, index) => (
             <div key={index} className="group bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
               <div className="relative aspect-square">
@@ -220,16 +220,16 @@ export default function Products() {
                   {product.category}
                 </div>
               </div>
-              <div className="p-6">
-                <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
-                <p className="text-gray-600 text-sm mb-4">{product.description}</p>
+              <div className="p-4">
+                <h3 className="font-semibold text-lg mb-2 line-clamp-1">{product.name}</h3>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-teal-600">{product.price}</span>
+                  <span className="text-xl font-bold text-teal-600">{product.price}</span>
                   <a
                     href={product.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+                    className="inline-flex items-center gap-2 bg-teal-600 text-white px-3 py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm"
                   >
                     <ShoppingBag className="w-4 h-4" />
                     Buy Now
