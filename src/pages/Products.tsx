@@ -2,46 +2,151 @@ import React, { useState } from 'react';
 import { ShoppingBag, Star, Search } from 'lucide-react';
 
 const products = [
+  // Green Tea
   {
-    name: "Digital Weight Scale",
-    description: "High-precision weight measurement for accurate progress tracking",
-    price: "₹1,299",
+    name: "Organic India Green Tea",
+    description: "Pure and natural green tea for health and wellness",
+    price: "₹199",
     rating: 4.5,
-    image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8",
-    link: "https://amzn.to/xyz123"
+    image: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5",
+    link: "https://amzn.to/3FrpiFa",
+    category: "Green Tea"
   },
   {
-    name: "Resistance Bands Set",
-    description: "Complete set of exercise bands for home workouts",
+    name: "Chamomile Tea",
+    description: "Soothing chamomile tea for relaxation and better sleep",
+    price: "₹299",
+    rating: 4.4,
+    image: "https://images.unsplash.com/photo-1597318181409-cf64d0b5d8a2",
+    link: "https://amzn.to/4mAOz0f",
+    category: "Green Tea"
+  },
+  {
+    name: "Blue Tea: SpearMint",
+    description: "Refreshing spearmint blue tea blend",
+    price: "₹249",
+    rating: 4.3,
+    image: "https://images.unsplash.com/photo-1597318181409-cf64d0b5d8a2",
+    link: "https://amzn.to/43ixKzD",
+    category: "Green Tea"
+  },
+  {
+    name: "Flurys Tulsi",
+    description: "Traditional tulsi tea for immunity and wellness",
+    price: "₹179",
+    rating: 4.6,
+    image: "https://images.unsplash.com/photo-1597318181409-cf64d0b5d8a2",
+    link: "https://amzn.to/4joY1RA",
+    category: "Green Tea"
+  },
+
+  // Apple Cider Vinegar
+  {
+    name: "WOW Life Apple Cider Vinegar",
+    description: "Raw, unfiltered apple cider vinegar with mother",
+    price: "₹399",
+    rating: 4.5,
+    image: "https://images.unsplash.com/photo-1598346762291-aee88549193f",
+    link: "https://amzn.in/d/1og3eCX",
+    category: "Apple Cider Vinegar"
+  },
+  {
+    name: "Kapiva Himalayan ACV",
+    description: "Premium Himalayan apple cider vinegar",
+    price: "₹449",
+    rating: 4.6,
+    image: "https://images.unsplash.com/photo-1598346762291-aee88549193f",
+    link: "https://amzn.in/d/3BFiGXi",
+    category: "Apple Cider Vinegar"
+  },
+  {
+    name: "The Plant Fix Plix ACV Tablets",
+    description: "Convenient ACV tablets for on-the-go wellness",
+    price: "₹599",
+    rating: 4.3,
+    image: "https://images.unsplash.com/photo-1598346762291-aee88549193f",
+    link: "https://amzn.to/4dW7ejn",
+    category: "Apple Cider Vinegar"
+  },
+
+  // Seeds and Dry Fruits
+  {
+    name: "Farmley Edible Seeds Combo",
+    description: "Premium quality mixed seeds for daily nutrition",
+    price: "₹499",
+    rating: 4.7,
+    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    link: "https://amzn.to/4jp1yzh",
+    category: "Seeds"
+  },
+  {
+    name: "True Elements 7 in 1 Seeds Mix",
+    description: "Nutritious blend of seven essential seeds",
+    price: "₹449",
+    rating: 4.6,
+    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    link: "https://amzn.in/d/9sCA51p",
+    category: "Seeds"
+  },
+  {
+    name: "Yoga bar Brazil Nuts",
+    description: "Premium quality Brazil nuts rich in selenium",
     price: "₹799",
     rating: 4.8,
-    image: "https://images.unsplash.com/photo-1517344368193-41552b6ad3f5",
-    link: "https://amzn.to/abc456"
+    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    link: "https://amzn.to/3FfFEAG",
+    category: "Dry Fruits"
   },
   {
-    name: "Premium Yoga Mat",
-    description: "Extra thick, non-slip exercise mat for comfort and stability",
-    price: "₹999",
+    name: "Happilo Almonds",
+    description: "Premium California almonds",
+    price: "₹699",
     rating: 4.7,
-    image: "https://images.unsplash.com/photo-1592432678016-e910b452f9a2",
-    link: "https://amzn.to/def789"
+    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    link: "https://amzn.in/d/cRRBooR",
+    category: "Dry Fruits"
+  },
+
+  // Grains
+  {
+    name: "True Elements Rolled Oats",
+    description: "100% whole grain rolled oats",
+    price: "₹299",
+    rating: 4.5,
+    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    link: "https://amzn.in/d/hxnFVnv",
+    category: "Grains"
   },
   {
-    name: "Smart Fitness Tracker",
-    description: "Track your activity, heart rate, and sleep patterns",
-    price: "₹2,499",
+    name: "MB High Protein Oats",
+    description: "High protein oats for fitness enthusiasts",
+    price: "₹349",
     rating: 4.6,
-    image: "https://images.unsplash.com/photo-1557858310-9052820906f7",
-    link: "https://amzn.to/ghi012"
+    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    link: "https://amzn.to/4myu2cy",
+    category: "Grains"
+  },
+  {
+    name: "Quaker Oats",
+    description: "Classic rolled oats for healthy breakfast",
+    price: "₹199",
+    rating: 4.7,
+    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    link: "https://amzn.in/d/f7ICOu5",
+    category: "Grains"
   }
 ];
 
+const categories = [...new Set(products.map(product => product.category))];
+
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (selectedCategory === 'all' || product.category === selectedCategory) &&
+    (product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     product.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -52,21 +157,47 @@ export default function Products() {
             Recommended Products
           </h1>
           <p className="text-xl text-gray-600">
-            Quality equipment to support your fitness journey
+            Quality products to support your wellness journey
           </p>
         </div>
 
-        {/* Search Box */}
-        <div className="max-w-md mx-auto mb-8">
-          <div className="relative">
+        {/* Search and Filter Section */}
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
+          <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
             />
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-4 py-2 rounded-full transition ${
+                selectedCategory === 'all'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              All
+            </button>
+            {categories.map(category => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-full transition ${
+                  selectedCategory === category
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -84,6 +215,9 @@ export default function Products() {
                     <span className="text-yellow-500">{product.rating}</span>
                     <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
                   </div>
+                </div>
+                <div className="absolute top-4 left-4 bg-teal-600 text-white px-3 py-1 rounded-full text-sm">
+                  {product.category}
                 </div>
               </div>
               <div className="p-6">
