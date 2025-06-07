@@ -14,6 +14,7 @@ import WorkoutSection from './pages/WorkoutSection';
 import Referral from './pages/Referral';
 import Products from './pages/Products';
 import Schedule from './pages/Schedule';
+import ClientManagement from './pages/ClientManagement';
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ export default function App() {
               <Route path="/admin/blogs" element={<AdminBlogList />} />
               <Route path="/admin/blogs/new" element={<BlogEditor />} />
               <Route path="/admin/blogs/edit/:id" element={<BlogEditor />} />
+              <Route path="/admin/clients" element={<ClientManagement />} />
               <Route path="/program-features" element={<ProgramFeatures />} />
               <Route path="/getting-started" element={<GettingStarted />} />
               <Route path="/workout-section" element={<WorkoutSection />} />

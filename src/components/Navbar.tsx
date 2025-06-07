@@ -11,11 +11,13 @@ import {
 import { Button } from "../components/ui/button"
 import { Menu, X } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useAuth } from '../lib/auth';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -93,6 +95,14 @@ export default function Navbar() {
                     Referral
                   </Link>
                 </NavigationMenuItem>
+
+                {user && (
+                  <NavigationMenuItem>
+                    <Link to="/admin/clients" className="text-foreground hover:text-primary px-4 py-2">
+                      Clients
+                    </Link>
+                  </NavigationMenuItem>
+                )}
               </NavigationMenuList>
             </NavigationMenu>
 
@@ -126,6 +136,14 @@ export default function Navbar() {
               >
                 Referral
               </Link>
+              {user && (
+                <Link
+                  to="/admin/clients"
+                  className="block py-2 text-foreground hover:text-primary"
+                >
+                  Clients
+                </Link>
+              )}
               <Button className="w-full" asChild>
                 <Link to="/schedule">
                   Book Follow-up
