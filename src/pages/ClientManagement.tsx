@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useRequireAuth } from '../lib/auth';
@@ -437,7 +438,12 @@ export default function ClientManagement() {
                 {clients?.map((client) => (
                   <tr key={client.id} className="hover:bg-gray-50">
                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
-                      {client.name}
+                      <Link
+                        to={`/admin/clients/${client.id}`}
+                        className="text-teal-600 hover:text-teal-800"
+                      >
+                        {client.name}
+                      </Link>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-600 max-w-[150px] truncate">
                       {client.notes}
