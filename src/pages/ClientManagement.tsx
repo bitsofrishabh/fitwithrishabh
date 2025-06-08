@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { useRequireAuth } from '../lib/auth';
-import { Plus, Edit, Trash2, Save, X, Calendar, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface Client {
   id: string;
@@ -29,6 +30,7 @@ export default function ClientManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingClient, setEditingClient] = useState<string | null>(null);
   const [editingWeight, setEditingWeight] = useState<{clientId: string, day: string} | null>(null);
+  const [authUser, setAuthUser] = useState<any>(null);
   const [newClient, setNewClient] = useState<NewClient>({
     name: '',
     startDate: '',
@@ -36,39 +38,76 @@ export default function ClientManagement() {
     notes: ''
   });
 
+  // Monitor auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+      if (user) {
+        console.log('User authenticated:', user.email);
+      } else {
+        console.log('User not authenticated');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   // Generate days array (1-31 for now, can be made dynamic)
   const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
 
-  const { data: clients, isLoading, error } = useQuery({
+  const { data: clients, isLoading, error, refetch } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
       try {
+        console.log('Fetching clients...');
+        console.log('Auth user:', authUser);
+        console.log('Current user:', auth.currentUser);
+        
+        if (!auth.currentUser) {
+          throw new Error('User not authenticated');
+        }
+
         const snapshot = await getDocs(collection(db, 'clients'));
+        console.log('Clients fetched successfully:', snapshot.size, 'documents');
+        
         return snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Client[];
       } catch (error) {
         console.error('Error fetching clients:', error);
-        throw new Error('Failed to fetch clients');
+        throw error;
       }
     },
-    retry: 3,
+    enabled: !!authUser, // Only run query when user is authenticated
+    retry: (failureCount, error) => {
+      console.log('Query retry attempt:', failureCount, error);
+      return failureCount < 2; // Retry up to 2 times
+    },
     retryDelay: 1000,
   });
 
   const addClientMutation = useMutation({
     mutationFn: async (clientData: NewClient) => {
       try {
+        console.log('Adding client:', clientData);
+        
+        if (!auth.currentUser) {
+          throw new Error('User not authenticated');
+        }
+        
         if (!clientData.name || !clientData.startDate || !clientData.startWeight) {
           throw new Error('Please fill in all required fields');
         }
         
-        await addDoc(collection(db, 'clients'), {
+        const docRef = await addDoc(collection(db, 'clients'), {
           ...clientData,
           weights: {},
           createdAt: serverTimestamp()
         });
+        
+        console.log('Client added successfully with ID:', docRef.id);
+        return docRef;
       } catch (error) {
         console.error('Error adding client:', error);
         throw error;
@@ -89,6 +128,12 @@ export default function ClientManagement() {
   const updateWeightMutation = useMutation({
     mutationFn: async ({ clientId, day, weight }: { clientId: string, day: string, weight: number }) => {
       try {
+        console.log('Updating weight:', { clientId, day, weight });
+        
+        if (!auth.currentUser) {
+          throw new Error('User not authenticated');
+        }
+        
         const client = clients?.find(c => c.id === clientId);
         if (!client) {
           throw new Error('Client not found');
@@ -101,6 +146,8 @@ export default function ClientManagement() {
             [day]: weight
           }
         });
+        
+        console.log('Weight updated successfully');
       } catch (error) {
         console.error('Error updating weight:', error);
         throw error;
@@ -120,8 +167,16 @@ export default function ClientManagement() {
   const updateClientMutation = useMutation({
     mutationFn: async ({ clientId, updates }: { clientId: string, updates: Partial<Client> }) => {
       try {
+        console.log('Updating client:', { clientId, updates });
+        
+        if (!auth.currentUser) {
+          throw new Error('User not authenticated');
+        }
+        
         const clientRef = doc(db, 'clients', clientId);
         await updateDoc(clientRef, updates);
+        
+        console.log('Client updated successfully');
       } catch (error) {
         console.error('Error updating client:', error);
         throw error;
@@ -141,7 +196,14 @@ export default function ClientManagement() {
   const deleteClientMutation = useMutation({
     mutationFn: async (clientId: string) => {
       try {
+        console.log('Deleting client:', clientId);
+        
+        if (!auth.currentUser) {
+          throw new Error('User not authenticated');
+        }
+        
         await deleteDoc(doc(db, 'clients', clientId));
+        console.log('Client deleted successfully');
       } catch (error) {
         console.error('Error deleting client:', error);
         throw error;
@@ -181,6 +243,10 @@ export default function ClientManagement() {
     }
   };
 
+  const handleRetry = () => {
+    refetch();
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -188,7 +254,8 @@ export default function ClientManagement() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-teal-600 mb-4" />
-            <p className="text-lg text-gray-600">Loading clients...</p>
+            <p className="text-lg text-gray-600 mb-2">Loading clients...</p>
+            <p className="text-sm text-gray-500">Please wait while we fetch your client data</p>
           </div>
         </div>
       </div>
@@ -201,15 +268,26 @@ export default function ClientManagement() {
       <div className="pt-24 pb-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="text-center">
-              <p className="text-lg text-red-600 mb-4">Error loading clients</p>
-              <p className="text-gray-600 mb-4">{error.message}</p>
-              <button
-                onClick={() => queryClient.invalidateQueries({ queryKey: ['clients'] })}
-                className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition"
-              >
-                Try Again
-              </button>
+            <div className="text-center max-w-md">
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Clients</h2>
+              <p className="text-gray-600 mb-4">
+                {error.message.includes('permissions') 
+                  ? 'You don\'t have permission to access client data. Please make sure you\'re logged in with the correct account.'
+                  : error.message || 'An error occurred while loading client data.'
+                }
+              </p>
+              <div className="space-y-2">
+                <button
+                  onClick={handleRetry}
+                  className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition"
+                >
+                  Try Again
+                </button>
+                <div className="text-sm text-gray-500">
+                  Current user: {authUser?.email || 'Not logged in'}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -222,7 +300,10 @@ export default function ClientManagement() {
       <Toaster position="top-center" />
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
+            <p className="text-gray-600 mt-1">Logged in as: {authUser?.email}</p>
+          </div>
           <button
             onClick={() => setShowAddForm(true)}
             disabled={addClientMutation.isPending}
