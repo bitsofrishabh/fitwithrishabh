@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useRequireAuth } from '../lib/auth';
-import { Plus, Edit, Trash2, Save, X, Calendar } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Calendar, Loader2 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 interface Client {
@@ -39,24 +39,40 @@ export default function ClientManagement() {
   // Generate days array (1-31 for now, can be made dynamic)
   const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
 
-  const { data: clients, isLoading } = useQuery({
+  const { data: clients, isLoading, error } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      const snapshot = await getDocs(collection(db, 'clients'));
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Client[];
+      try {
+        const snapshot = await getDocs(collection(db, 'clients'));
+        return snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Client[];
+      } catch (error) {
+        console.error('Error fetching clients:', error);
+        throw new Error('Failed to fetch clients');
+      }
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const addClientMutation = useMutation({
     mutationFn: async (clientData: NewClient) => {
-      await addDoc(collection(db, 'clients'), {
-        ...clientData,
-        weights: {},
-        createdAt: serverTimestamp()
-      });
+      try {
+        if (!clientData.name || !clientData.startDate || !clientData.startWeight) {
+          throw new Error('Please fill in all required fields');
+        }
+        
+        await addDoc(collection(db, 'clients'), {
+          ...clientData,
+          weights: {},
+          createdAt: serverTimestamp()
+        });
+      } catch (error) {
+        console.error('Error adding client:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -64,22 +80,30 @@ export default function ClientManagement() {
       setNewClient({ name: '', startDate: '', startWeight: 0, notes: '' });
       toast.success('Client added successfully!');
     },
-    onError: () => {
-      toast.error('Failed to add client');
+    onError: (error: any) => {
+      console.error('Add client error:', error);
+      toast.error(error.message || 'Failed to add client');
     }
   });
 
   const updateWeightMutation = useMutation({
     mutationFn: async ({ clientId, day, weight }: { clientId: string, day: string, weight: number }) => {
-      const clientRef = doc(db, 'clients', clientId);
-      const client = clients?.find(c => c.id === clientId);
-      if (client) {
+      try {
+        const client = clients?.find(c => c.id === clientId);
+        if (!client) {
+          throw new Error('Client not found');
+        }
+        
+        const clientRef = doc(db, 'clients', clientId);
         await updateDoc(clientRef, {
           weights: {
             ...client.weights,
             [day]: weight
           }
         });
+      } catch (error) {
+        console.error('Error updating weight:', error);
+        throw error;
       }
     },
     onSuccess: () => {
@@ -87,36 +111,49 @@ export default function ClientManagement() {
       setEditingWeight(null);
       toast.success('Weight updated successfully!');
     },
-    onError: () => {
-      toast.error('Failed to update weight');
+    onError: (error: any) => {
+      console.error('Update weight error:', error);
+      toast.error(error.message || 'Failed to update weight');
     }
   });
 
   const updateClientMutation = useMutation({
     mutationFn: async ({ clientId, updates }: { clientId: string, updates: Partial<Client> }) => {
-      const clientRef = doc(db, 'clients', clientId);
-      await updateDoc(clientRef, updates);
+      try {
+        const clientRef = doc(db, 'clients', clientId);
+        await updateDoc(clientRef, updates);
+      } catch (error) {
+        console.error('Error updating client:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setEditingClient(null);
       toast.success('Client updated successfully!');
     },
-    onError: () => {
-      toast.error('Failed to update client');
+    onError: (error: any) => {
+      console.error('Update client error:', error);
+      toast.error(error.message || 'Failed to update client');
     }
   });
 
   const deleteClientMutation = useMutation({
     mutationFn: async (clientId: string) => {
-      await deleteDoc(doc(db, 'clients', clientId));
+      try {
+        await deleteDoc(doc(db, 'clients', clientId));
+      } catch (error) {
+        console.error('Error deleting client:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast.success('Client deleted successfully!');
     },
-    onError: () => {
-      toast.error('Failed to delete client');
+    onError: (error: any) => {
+      console.error('Delete client error:', error);
+      toast.error(error.message || 'Failed to delete client');
     }
   });
 
@@ -131,7 +168,10 @@ export default function ClientManagement() {
 
   const handleWeightUpdate = (clientId: string, day: string, weight: string) => {
     const weightNum = parseFloat(weight);
-    if (isNaN(weightNum)) return;
+    if (isNaN(weightNum) || weightNum <= 0) {
+      toast.error('Please enter a valid weight');
+      return;
+    }
     updateWeightMutation.mutate({ clientId, day, weight: weightNum });
   };
 
@@ -141,11 +181,37 @@ export default function ClientManagement() {
     }
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="pt-24 pb-16">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center">Loading clients...</div>
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-teal-600 mb-4" />
+            <p className="text-lg text-gray-600">Loading clients...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="pt-24 pb-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="text-center">
+              <p className="text-lg text-red-600 mb-4">Error loading clients</p>
+              <p className="text-gray-600 mb-4">{error.message}</p>
+              <button
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['clients'] })}
+                className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -159,9 +225,14 @@ export default function ClientManagement() {
           <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
           <button
             onClick={() => setShowAddForm(true)}
-            className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition"
+            disabled={addClientMutation.isPending}
+            className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
           >
-            <Plus className="w-5 h-5" />
+            {addClientMutation.isPending ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Plus className="w-5 h-5" />
+            )}
             Add Client
           </button>
         </div>
@@ -174,6 +245,7 @@ export default function ClientManagement() {
               <button
                 onClick={() => setShowAddForm(false)}
                 className="text-gray-500 hover:text-gray-700"
+                disabled={addClientMutation.isPending}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -189,6 +261,7 @@ export default function ClientManagement() {
                   value={newClient.name}
                   onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  disabled={addClientMutation.isPending}
                 />
               </div>
               <div>
@@ -201,6 +274,7 @@ export default function ClientManagement() {
                   value={newClient.startDate}
                   onChange={(e) => setNewClient({ ...newClient, startDate: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  disabled={addClientMutation.isPending}
                 />
               </div>
               <div>
@@ -210,10 +284,12 @@ export default function ClientManagement() {
                 <input
                   type="number"
                   step="0.1"
+                  min="1"
                   required
                   value={newClient.startWeight || ''}
                   onChange={(e) => setNewClient({ ...newClient, startWeight: parseFloat(e.target.value) || 0 })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  disabled={addClientMutation.isPending}
                 />
               </div>
               <div>
@@ -225,15 +301,23 @@ export default function ClientManagement() {
                   value={newClient.notes}
                   onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  disabled={addClientMutation.isPending}
                 />
               </div>
               <div className="md:col-span-2 lg:col-span-4">
                 <button
                   type="submit"
                   disabled={addClientMutation.isPending}
-                  className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
+                  className="inline-flex items-center gap-2 bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
                 >
-                  {addClientMutation.isPending ? 'Adding...' : 'Add Client'}
+                  {addClientMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    'Add Client'
+                  )}
                 </button>
               </div>
             </form>
@@ -289,6 +373,7 @@ export default function ClientManagement() {
                           <input
                             type="number"
                             step="0.1"
+                            min="1"
                             defaultValue={client.weights[day] || ''}
                             onBlur={(e) => {
                               if (e.target.value) {
@@ -306,13 +391,20 @@ export default function ClientManagement() {
                             }}
                             className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-teal-500"
                             autoFocus
+                            disabled={updateWeightMutation.isPending}
                           />
                         ) : (
                           <div
                             onClick={() => setEditingWeight({ clientId: client.id, day })}
                             className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded min-h-[24px] flex items-center justify-center"
                           >
-                            {client.weights[day] || '-'}
+                            {updateWeightMutation.isPending && 
+                             editingWeight?.clientId === client.id && 
+                             editingWeight?.day === day ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              client.weights[day] || '-'
+                            )}
                           </div>
                         )}
                       </td>
@@ -321,10 +413,15 @@ export default function ClientManagement() {
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => handleDeleteClient(client.id, client.name)}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 hover:text-red-800 disabled:opacity-50"
                           title="Delete Client"
+                          disabled={deleteClientMutation.isPending}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {deleteClientMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </td>
