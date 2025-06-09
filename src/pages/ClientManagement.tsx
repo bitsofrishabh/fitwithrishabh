@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom';
 import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useRequireAuth } from '../lib/auth';
-import { Plus, Edit, Trash2, Save, X, Calendar, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Calendar, Loader2, AlertCircle, Upload } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { onAuthStateChanged } from 'firebase/auth';
+import CSVImport from '../components/CSVImport';
 
 interface Client {
   id: string;
@@ -29,6 +30,7 @@ export default function ClientManagement() {
   useRequireAuth();
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showCSVImport, setShowCSVImport] = useState(false);
   const [editingClient, setEditingClient] = useState<string | null>(null);
   const [editingWeight, setEditingWeight] = useState<{clientId: string, day: string} | null>(null);
   const [authUser, setAuthUser] = useState<any>(null);
@@ -305,18 +307,27 @@ export default function ClientManagement() {
             <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
             <p className="text-gray-600 mt-1">Logged in as: {authUser?.email}</p>
           </div>
-          <button
-            onClick={() => setShowAddForm(true)}
-            disabled={addClientMutation.isPending}
-            className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
-          >
-            {addClientMutation.isPending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Plus className="w-5 h-5" />
-            )}
-            Add Client
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowCSVImport(true)}
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              <Upload className="w-5 h-5" />
+              Import CSV
+            </button>
+            <button
+              onClick={() => setShowAddForm(true)}
+              disabled={addClientMutation.isPending}
+              className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
+            >
+              {addClientMutation.isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Plus className="w-5 h-5" />
+              )}
+              Add Client
+            </button>
+          </div>
         </div>
 
         {/* Add Client Form */}
@@ -404,6 +415,11 @@ export default function ClientManagement() {
               </div>
             </form>
           </div>
+        )}
+
+        {/* CSV Import Modal */}
+        {showCSVImport && (
+          <CSVImport onClose={() => setShowCSVImport(false)} />
         )}
 
         {/* Clients Table */}
