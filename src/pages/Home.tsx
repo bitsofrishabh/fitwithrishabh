@@ -5,6 +5,7 @@ import ClientTestimonials from '../components/ClientTestimonials';
 import TestimonialGallery from '../components/TestimonialGallery';
 import FAQ from '../components/FAQ';
 import Contact from '../components/Contact';
+import Footer from '../components/Footer';
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
       <TestimonialGallery />
       <FAQ />
       <Contact />
+      <Footer />
     </div>
   );
 }

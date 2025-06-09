@@ -1,5 +1,3 @@
-// Previous code remains...
-
 export const PROGRAM_SECTIONS = {
   introduction: {
     title: "About the Program",
