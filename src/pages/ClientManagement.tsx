@@ -8,6 +8,7 @@ import { Plus, Edit, Trash2, Save, X, Calendar, Loader2, AlertCircle, Upload } f
 import { Toaster, toast } from 'sonner';
 import { onAuthStateChanged } from 'firebase/auth';
 import CSVImport from '../components/CSVImport';
+import { MONTHS, getDaysInMonth } from '../lib/months';
 
 interface Client {
   id: string;
@@ -15,7 +16,8 @@ interface Client {
   startDate: string;
   startWeight: number;
   notes: string;
-  weights: { [key: string]: number }; // day1: weight, day2: weight, etc.
+  // month -> day -> weight
+  weights: Record<string, Record<string, number>>;
   createdAt: any;
 }
 
@@ -33,6 +35,8 @@ export default function ClientManagement() {
   const [showCSVImport, setShowCSVImport] = useState(false);
   const [editingClient, setEditingClient] = useState<string | null>(null);
   const [editingWeight, setEditingWeight] = useState<{clientId: string, day: string} | null>(null);
+  const [editedClientData, setEditedClientData] = useState<Partial<Client> | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>(MONTHS[0]);
   const [authUser, setAuthUser] = useState<any>(null);
   const [newClient, setNewClient] = useState<NewClient>({
     name: '',
@@ -55,8 +59,7 @@ export default function ClientManagement() {
     return () => unsubscribe();
   }, []);
 
-  // Generate days array (1-31 for now, can be made dynamic)
-  const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
+  const days = Array.from({ length: getDaysInMonth(selectedMonth) }, (_, i) => (i + 1).toString());
 
   const { data: clients, isLoading, error, refetch } = useQuery({
     queryKey: ['clients'],
@@ -73,10 +76,15 @@ export default function ClientManagement() {
         const snapshot = await getDocs(collection(db, 'clients'));
         console.log('Clients fetched successfully:', snapshot.size, 'documents');
         
-        return snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Client[];
+        return snapshot.docs.map(doc => {
+          const data = doc.data() as Client;
+          let weights = data.weights || {};
+          // migrate old flat structure
+          if (weights && !MONTHS.some(m => m in weights)) {
+            weights = { [MONTHS[0]]: weights as any };
+          }
+          return { id: doc.id, ...data, weights } as Client;
+        });
       } catch (error) {
         console.error('Error fetching clients:', error);
         throw error;
@@ -129,9 +137,9 @@ export default function ClientManagement() {
   });
 
   const updateWeightMutation = useMutation({
-    mutationFn: async ({ clientId, day, weight }: { clientId: string, day: string, weight: number }) => {
+    mutationFn: async ({ clientId, month, day, weight }: { clientId: string, month: string, day: string, weight: number }) => {
       try {
-        console.log('Updating weight:', { clientId, day, weight });
+        console.log('Updating weight:', { clientId, month, day, weight });
         
         if (!auth.currentUser) {
           throw new Error('User not authenticated');
@@ -144,10 +152,7 @@ export default function ClientManagement() {
         
         const clientRef = doc(db, 'clients', clientId);
         await updateDoc(clientRef, {
-          weights: {
-            ...client.weights,
-            [day]: weight
-          }
+          [`weights.${month}.${day}`]: weight
         });
         
         console.log('Weight updated successfully');
@@ -237,7 +242,7 @@ export default function ClientManagement() {
       toast.error('Please enter a valid weight');
       return;
     }
-    updateWeightMutation.mutate({ clientId, day, weight: weightNum });
+    updateWeightMutation.mutate({ clientId, month: selectedMonth, day, weight: weightNum });
   };
 
   const handleDeleteClient = (clientId: string, clientName: string) => {
@@ -254,7 +259,7 @@ export default function ClientManagement() {
   if (isLoading) {
     return (
       <div className="pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="w-full px-4">
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-teal-600 mb-4" />
             <p className="text-lg text-gray-600 mb-2">Loading clients...</p>
@@ -269,7 +274,7 @@ export default function ClientManagement() {
   if (error) {
     return (
       <div className="pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="w-full px-4">
           <div className="flex flex-col items-center justify-center py-20">
             <div className="text-center max-w-md">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
@@ -301,7 +306,7 @@ export default function ClientManagement() {
   return (
     <div className="pt-24 pb-16">
       <Toaster position="top-center" />
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="w-full px-4">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
@@ -422,10 +427,24 @@ export default function ClientManagement() {
           <CSVImport onClose={() => setShowCSVImport(false)} />
         )}
 
+        {/* Month Selector */}
+        <div className="mb-4">
+          <label className="mr-2 font-medium">Month:</label>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="border px-2 py-1 rounded"
+          >
+            {MONTHS.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Clients Table */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full">
+            <table className="min-w-full w-full">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
@@ -462,13 +481,41 @@ export default function ClientManagement() {
                       </Link>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-600 max-w-[150px] truncate">
-                      {client.notes}
+                      {editingClient === client.id ? (
+                        <input
+                          type="text"
+                          value={editedClientData?.notes ?? client.notes}
+                          onChange={e => setEditedClientData({ ...(editedClientData || {}), notes: e.target.value })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded"
+                        />
+                      ) : (
+                        client.notes
+                      )}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {client.startDate}
+                      {editingClient === client.id ? (
+                        <input
+                          type="date"
+                          value={editedClientData?.startDate ?? client.startDate}
+                          onChange={e => setEditedClientData({ ...(editedClientData || {}), startDate: e.target.value })}
+                          className="px-2 py-1 border border-gray-300 rounded"
+                        />
+                      ) : (
+                        client.startDate
+                      )}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {client.startWeight} kg
+                      {editingClient === client.id ? (
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editedClientData?.startWeight ?? client.startWeight}
+                          onChange={e => setEditedClientData({ ...(editedClientData || {}), startWeight: parseFloat(e.target.value) })}
+                          className="w-20 px-2 py-1 border border-gray-300 rounded"
+                        />
+                      ) : (
+                        `${client.startWeight} kg`
+                      )}
                     </td>
                     {days.map(day => (
                       <td key={day} className="px-3 py-4 text-center text-sm">
@@ -477,7 +524,7 @@ export default function ClientManagement() {
                             type="number"
                             step="0.1"
                             min="1"
-                            defaultValue={client.weights[day] || ''}
+                            defaultValue={client.weights[selectedMonth]?.[day] || ''}
                             onBlur={(e) => {
                               if (e.target.value) {
                                 handleWeightUpdate(client.id, day, e.target.value);
@@ -501,12 +548,12 @@ export default function ClientManagement() {
                             onClick={() => setEditingWeight({ clientId: client.id, day })}
                             className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded min-h-[24px] flex items-center justify-center"
                           >
-                            {updateWeightMutation.isPending && 
-                             editingWeight?.clientId === client.id && 
+                            {updateWeightMutation.isPending &&
+                             editingWeight?.clientId === client.id &&
                              editingWeight?.day === day ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                              client.weights[day] || '-'
+                              client.weights[selectedMonth]?.[day] || '-'
                             )}
                           </div>
                         )}
@@ -514,18 +561,51 @@ export default function ClientManagement() {
                     ))}
                     <td className="px-4 py-4 whitespace-nowrap text-center">
                       <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => handleDeleteClient(client.id, client.name)}
-                          className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                          title="Delete Client"
-                          disabled={deleteClientMutation.isPending}
-                        >
-                          {deleteClientMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
+                        {editingClient === client.id ? (
+                          <>
+                            <button
+                              onClick={() => {
+                                if (editedClientData) {
+                                  updateClientMutation.mutate({ clientId: client.id, updates: editedClientData });
+                                } else {
+                                  setEditingClient(null);
+                                }
+                              }}
+                              className="text-teal-600 hover:text-teal-800"
+                              disabled={updateClientMutation.isPending}
+                            >
+                              {updateClientMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            </button>
+                            <button
+                              onClick={() => { setEditingClient(null); setEditedClientData(null); }}
+                              className="text-gray-600 hover:text-gray-800"
+                              disabled={updateClientMutation.isPending}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => { setEditingClient(client.id); setEditedClientData({ startDate: client.startDate, startWeight: client.startWeight, notes: client.notes }); }}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClient(client.id, client.name)}
+                              className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                              title="Delete Client"
+                              disabled={deleteClientMutation.isPending}
+                            >
+                              {deleteClientMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

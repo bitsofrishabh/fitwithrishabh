@@ -1,13 +1,21 @@
 import React from 'react';
+import { MONTHS } from '../lib/months';
 
 interface WeightGraphProps {
-  weights: { [day: string]: number };
+  // month -> day -> weight
+  weights: Record<string, Record<string, number>>;
 }
 
 export default function WeightGraph({ weights }: WeightGraphProps) {
   const entries = Object.entries(weights)
-    .map(([day, weight]) => ({ day: parseInt(day, 10), weight }))
-    .sort((a, b) => a.day - b.day);
+    .flatMap(([month, days]) =>
+      Object.entries(days).map(([day, weight]) => ({
+        index: `${month}-${day}`,
+        order: MONTHS.indexOf(month) * 31 + parseInt(day, 10),
+        weight,
+      }))
+    )
+    .sort((a, b) => a.order - b.order);
 
   if (entries.length === 0) {
     return <p className="text-gray-600">No weight data available.</p>;
@@ -17,8 +25,8 @@ export default function WeightGraph({ weights }: WeightGraphProps) {
   const height = 300;
   const padding = 40;
 
-  const minX = entries[0].day;
-  const maxX = entries[entries.length - 1].day;
+  const minX = entries[0].order;
+  const maxX = entries[entries.length - 1].order;
   const minY = Math.min(...entries.map(e => e.weight));
   const maxY = Math.max(...entries.map(e => e.weight));
 
@@ -27,7 +35,7 @@ export default function WeightGraph({ weights }: WeightGraphProps) {
   const yScale = (y: number) =>
     height - padding - ((y - minY) * (height - padding * 2)) / Math.max(1, maxY - minY);
 
-  const points = entries.map(e => `${xScale(e.day)},${yScale(e.weight)}`).join(' ');
+  const points = entries.map(e => `${xScale(e.order)},${yScale(e.weight)}`).join(' ');
 
   return (
     <svg width={width} height={height} className="mx-auto mt-4">
@@ -39,8 +47,8 @@ export default function WeightGraph({ weights }: WeightGraphProps) {
       />
       {entries.map(e => (
         <circle
-          key={e.day}
-          cx={xScale(e.day)}
+          key={e.index}
+          cx={xScale(e.order)}
           cy={yScale(e.weight)}
           r={3}
           fill="#14b8a6"

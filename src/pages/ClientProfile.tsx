@@ -12,7 +12,7 @@ interface Client {
   startDate: string;
   startWeight: number;
   notes: string;
-  weights: { [key: string]: number };
+  weights: Record<string, Record<string, number>>;
 }
 
 export default function ClientProfile() {
