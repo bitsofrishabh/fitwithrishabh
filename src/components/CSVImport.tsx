@@ -92,8 +92,10 @@ export default function CSVImport({ onClose }: CSVImportProps) {
             if (header.startsWith('day')) {
               const dayWeight = parseFloat(value);
               if (!isNaN(dayWeight) && dayWeight > 0) {
-                client.weights[header] = dayWeight;
-                console.log(`Added weight for ${client.name || 'Unknown'} ${header}: ${dayWeight}`);
+                 const dayMatch = header.match(/day\s*(\d+)/); // extract the numeric part
+                  const dayKey = dayMatch ? dayMatch[1] : header;
+                client.weights[dayKey] = dayWeight;
+                console.log(`Added weight for ${client.name || 'Unknown'} ${dayKey}: ${dayWeight}`);
               }
             }
             break;
