@@ -4,13 +4,28 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { toast } from 'sonner';
+import { MONTHS } from '../lib/months';
+
+function parseDate(value: string): Date | null {
+  if (!value) return null;
+  const iso = new Date(value);
+  if (!isNaN(iso.getTime())) return iso;
+  const parts = value.split('-');
+  if (parts.length === 3) {
+    const [d, m, y] = parts;
+    const date = new Date(`${y}-${m}-${d}`);
+    if (!isNaN(date.getTime())) return date;
+  }
+  return null;
+}
 
 interface ClientData {
   name: string;
   startDate: string;
   startWeight: number;
   notes: string;
-  weights: { [key: string]: number };
+  // month -> day -> weight
+  weights: { [month: string]: { [day: string]: number } };
 }
 
 interface CSVImportProps {
@@ -92,10 +107,16 @@ export default function CSVImport({ onClose }: CSVImportProps) {
             if (header.startsWith('day')) {
               const dayWeight = parseFloat(value);
               if (!isNaN(dayWeight) && dayWeight > 0) {
-                 const dayMatch = header.match(/day\s*(\d+)/); // extract the numeric part
-                  const dayKey = dayMatch ? dayMatch[1] : header;
-                client.weights[dayKey] = dayWeight;
-                console.log(`Added weight for ${client.name || 'Unknown'} ${dayKey}: ${dayWeight}`);
+                const dayMatch = header.match(/day\s*(\d+)/); // extract the numeric part
+                const dayKey = dayMatch ? dayMatch[1] : header;
+
+                const monthName =
+                  parseDate(client.startDate)?.toLocaleString('default', { month: 'long' }) || 'June';
+                if (!client.weights[monthName]) {
+                  client.weights[monthName] = {};
+                }
+                client.weights[monthName][dayKey] = dayWeight;
+                console.log(`Added weight for ${client.name || 'Unknown'} ${monthName} ${dayKey}: ${dayWeight}`);
               }
             }
             break;
@@ -106,8 +127,11 @@ export default function CSVImport({ onClose }: CSVImportProps) {
       if (hasRequiredData && (client.startWeight > 0 || Object.keys(client.weights).length > 0)) {
         // If no start weight but has day weights, use the first day weight as start weight
         if (client.startWeight === 0 && Object.keys(client.weights).length > 0) {
-          const firstDayWeight = Object.values(client.weights)[0];
-          client.startWeight = firstDayWeight;
+          const firstMonth = Object.keys(client.weights)[0];
+          const firstDayWeight = firstMonth ? Object.values(client.weights[firstMonth])[0] : 0;
+          if (typeof firstDayWeight === 'number' && firstDayWeight > 0) {
+            client.startWeight = firstDayWeight;
+          }
         }
         
         // Set default start date if not provided
