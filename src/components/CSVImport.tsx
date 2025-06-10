@@ -64,7 +64,16 @@ export default function CSVImport({ onClose }: CSVImportProps) {
           case 'start date':
           case 'start_date':
           case 'startdate':
-            client.startDate = value;
+            // Handle different date formats
+            if (value) {
+              // Convert DD-MM-YYYY to YYYY-MM-DD
+              if (value.includes('-') && value.split('-')[0].length === 2) {
+                const parts = value.split('-');
+                client.startDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+              } else {
+                client.startDate = value;
+              }
+            }
             break;
           case 'start weight':
           case 'start_weight':
@@ -84,7 +93,7 @@ export default function CSVImport({ onClose }: CSVImportProps) {
               const dayWeight = parseFloat(value);
               if (!isNaN(dayWeight) && dayWeight > 0) {
                 client.weights[header] = dayWeight;
-                console.log(`Added weight for ${header}: ${dayWeight}`);
+                console.log(`Added weight for ${client.name || 'Unknown'} ${header}: ${dayWeight}`);
               }
             }
             break;
@@ -162,12 +171,12 @@ export default function CSVImport({ onClose }: CSVImportProps) {
     
     try {
       const text = await file.text();
-      console.log('File content:', text.substring(0, 500)); // Log first 500 chars
+      console.log('File content preview:', text.substring(0, 500));
       
       const clients = parseCSV(text);
       
       if (clients.length === 0) {
-        toast.error('No valid client data found in the file. Please check the format.');
+        toast.error('No valid client data found in the file. Please check the format and ensure at least one row has a name and weight data.');
         setImporting(false);
         return;
       }
@@ -185,7 +194,7 @@ export default function CSVImport({ onClose }: CSVImportProps) {
   const downloadTemplate = () => {
     const template = `name,start_date,start_weight,notes,day1,day2,day3,day4,day5,day6,day7,day8,day9,day10,day11,day12,day13,day14,day15,day16,day17,day18,day19,day20,day21,day22,day23,day24,day25,day26,day27,day28,day29,day30,day31
 John Doe,2024-01-01,80.5,Initial consultation,80.5,80.2,79.8,79.5,79.2,78.9,78.6,78.3,78.0,77.7,77.4,77.1,76.8,76.5,76.2,75.9,75.6,75.3,75.0,74.7,74.4,74.1,73.8,73.5,73.2,72.9,72.6,72.3,72.0
-Jane Smith,2024-01-15,65.0,Weight loss program,65.0,64.8,64.5,64.2,64.0,63.7,63.5,63.2,63.0,62.7,62.5,62.2,62.0,61.7,61.5,61.2,61.0,60.7,60.5,60.2,60.0,59.7,59.5,59.2,59.0,58.7,58.5,58.2,58.0`;
+Jane Smith,15-01-2024,65.0,Weight loss program,65.0,64.8,64.5,64.2,64.0,63.7,63.5,63.2,63.0,62.7,62.5,62.2,62.0,61.7,61.5,61.2,61.0,60.7,60.5,60.2,60.0,59.7,59.5,59.2,59.0,58.7,58.5,58.2,58.0`;
     
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -221,8 +230,9 @@ Jane Smith,2024-01-15,65.0,Weight loss program,65.0,64.8,64.5,64.2,64.0,63.7,63.
               <li>Fill in your client data following the template format</li>
               <li>Save as CSV file and upload it here</li>
               <li>Weight columns should be named: day1, day2, day3, etc.</li>
-              <li>Date format should be: YYYY-MM-DD or DD-MM-YYYY</li>
+              <li>Date format can be: YYYY-MM-DD or DD-MM-YYYY</li>
               <li>Make sure to include client name and at least one weight value</li>
+              <li>Empty rows will be automatically skipped</li>
             </ol>
           </div>
 
