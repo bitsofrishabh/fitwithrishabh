@@ -25,14 +25,18 @@ export default function CSVImport({ onClose }: CSVImportProps) {
 
   const parseCSV = (csvText: string): ClientData[] => {
     const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length === 0) return [];
+    
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    console.log('Headers found:', headers);
     
     const clients: ClientData[] = [];
     
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim());
       
-      if (values.length < 4) continue; // Skip incomplete rows
+      // Skip empty rows (all values are empty)
+      if (values.every(v => !v)) continue;
       
       const client: ClientData = {
         name: '',
@@ -42,15 +46,20 @@ export default function CSVImport({ onClose }: CSVImportProps) {
         weights: {}
       };
       
-      // Parse basic client info
+      let hasRequiredData = false;
+      
+      // Parse each column based on header
       headers.forEach((header, index) => {
         const value = values[index] || '';
+        
+        if (!value) return; // Skip empty values
         
         switch (header) {
           case 'name':
           case 'client name':
           case 'client_name':
             client.name = value;
+            hasRequiredData = true;
             break;
           case 'start date':
           case 'start_date':
@@ -60,7 +69,10 @@ export default function CSVImport({ onClose }: CSVImportProps) {
           case 'start weight':
           case 'start_weight':
           case 'startweight':
-            client.startWeight = parseFloat(value) || 0;
+            const weight = parseFloat(value);
+            if (!isNaN(weight) && weight > 0) {
+              client.startWeight = weight;
+            }
             break;
           case 'notes':
           case 'note':
@@ -68,18 +80,36 @@ export default function CSVImport({ onClose }: CSVImportProps) {
             break;
           default:
             // Check if it's a day column (day1, day2, etc.)
-            if (header.startsWith('day') && value && !isNaN(parseFloat(value))) {
-              client.weights[header] = parseFloat(value);
+            if (header.startsWith('day')) {
+              const dayWeight = parseFloat(value);
+              if (!isNaN(dayWeight) && dayWeight > 0) {
+                client.weights[header] = dayWeight;
+                console.log(`Added weight for ${header}: ${dayWeight}`);
+              }
             }
             break;
         }
       });
       
-      if (client.name && client.startDate && client.startWeight > 0) {
+      // Only add client if they have a name and either start weight or some day weights
+      if (hasRequiredData && (client.startWeight > 0 || Object.keys(client.weights).length > 0)) {
+        // If no start weight but has day weights, use the first day weight as start weight
+        if (client.startWeight === 0 && Object.keys(client.weights).length > 0) {
+          const firstDayWeight = Object.values(client.weights)[0];
+          client.startWeight = firstDayWeight;
+        }
+        
+        // Set default start date if not provided
+        if (!client.startDate) {
+          client.startDate = new Date().toISOString().split('T')[0];
+        }
+        
+        console.log('Adding client:', client);
         clients.push(client);
       }
     }
     
+    console.log('Parsed clients:', clients);
     return clients;
   };
 
@@ -89,12 +119,14 @@ export default function CSVImport({ onClose }: CSVImportProps) {
       
       for (const client of clients) {
         try {
+          console.log('Importing client:', client);
           await addDoc(collection(db, 'clients'), {
             ...client,
             createdAt: serverTimestamp()
           });
           results.success++;
         } catch (error: any) {
+          console.error('Error importing client:', client.name, error);
           results.errors.push(`Failed to import ${client.name}: ${error.message}`);
         }
       }
@@ -110,6 +142,7 @@ export default function CSVImport({ onClose }: CSVImportProps) {
       }
     },
     onError: (error: any) => {
+      console.error('Import mutation error:', error);
       toast.error(`Import failed: ${error.message}`);
     }
   });
@@ -129,16 +162,20 @@ export default function CSVImport({ onClose }: CSVImportProps) {
     
     try {
       const text = await file.text();
+      console.log('File content:', text.substring(0, 500)); // Log first 500 chars
+      
       const clients = parseCSV(text);
       
       if (clients.length === 0) {
-        toast.error('No valid client data found in the file');
+        toast.error('No valid client data found in the file. Please check the format.');
         setImporting(false);
         return;
       }
       
+      console.log(`Found ${clients.length} valid clients to import`);
       importMutation.mutate(clients);
     } catch (error: any) {
+      console.error('File reading error:', error);
       toast.error(`Failed to read file: ${error.message}`);
     } finally {
       setImporting(false);
@@ -184,7 +221,8 @@ Jane Smith,2024-01-15,65.0,Weight loss program,65.0,64.8,64.5,64.2,64.0,63.7,63.
               <li>Fill in your client data following the template format</li>
               <li>Save as CSV file and upload it here</li>
               <li>Weight columns should be named: day1, day2, day3, etc.</li>
-              <li>Date format should be: YYYY-MM-DD</li>
+              <li>Date format should be: YYYY-MM-DD or DD-MM-YYYY</li>
+              <li>Make sure to include client name and at least one weight value</li>
             </ol>
           </div>
 
