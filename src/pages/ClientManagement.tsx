@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useRequireAuth } from '../lib/auth';
-import { Plus, Edit, Trash2, Save, X, Calendar, Loader2, AlertCircle, Upload } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Calendar, Loader2, AlertCircle, Upload, Filter } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { onAuthStateChanged } from 'firebase/auth';
 import CSVImport from '../components/CSVImport';
@@ -16,6 +16,7 @@ interface Client {
   startDate: string;
   startWeight: number;
   notes: string;
+  status: 'active' | 'inactive' | 'yet-to-start' | 'completed';
   // month -> day -> weight
   weights: Record<string, Record<string, number>>;
   createdAt: any;
@@ -26,7 +27,15 @@ interface NewClient {
   startDate: string;
   startWeight: number;
   notes: string;
+  status: 'active' | 'inactive' | 'yet-to-start' | 'completed';
 }
+
+const statusOptions = [
+  { value: 'yet-to-start', label: 'Yet to Start', color: 'bg-gray-100 text-gray-800' },
+  { value: 'active', label: 'Active', color: 'bg-green-100 text-green-800' },
+  { value: 'inactive', label: 'Inactive', color: 'bg-yellow-100 text-yellow-800' },
+  { value: 'completed', label: 'Completed', color: 'bg-blue-100 text-blue-800' }
+];
 
 export default function ClientManagement() {
   useRequireAuth();
@@ -37,12 +46,14 @@ export default function ClientManagement() {
   const [editingWeight, setEditingWeight] = useState<{clientId: string, day: string} | null>(null);
   const [editedClientData, setEditedClientData] = useState<Partial<Client> | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>(MONTHS[0]);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [authUser, setAuthUser] = useState<any>(null);
   const [newClient, setNewClient] = useState<NewClient>({
     name: '',
     startDate: '',
     startWeight: 0,
-    notes: ''
+    notes: '',
+    status: 'yet-to-start'
   });
 
   // Monitor auth state
@@ -83,7 +94,9 @@ export default function ClientManagement() {
           if (weights && !MONTHS.some(m => m in weights)) {
             weights = { [MONTHS[0]]: weights as any };
           }
-          return { id: doc.id, ...data, weights } as Client;
+          // Add default status if not present
+          const status = data.status || 'yet-to-start';
+          return { id: doc.id, ...data, weights, status } as Client;
         });
       } catch (error) {
         console.error('Error fetching clients:', error);
@@ -97,6 +110,11 @@ export default function ClientManagement() {
     },
     retryDelay: 1000,
   });
+
+  // Filter clients by status
+  const filteredClients = clients?.filter(client => 
+    statusFilter === 'all' || client.status === statusFilter
+  ) || [];
 
   const addClientMutation = useMutation({
     mutationFn: async (clientData: NewClient) => {
@@ -127,7 +145,7 @@ export default function ClientManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setShowAddForm(false);
-      setNewClient({ name: '', startDate: '', startWeight: 0, notes: '' });
+      setNewClient({ name: '', startDate: '', startWeight: 0, notes: '', status: 'yet-to-start' });
       toast.success('Client added successfully!');
     },
     onError: (error: any) => {
@@ -255,6 +273,11 @@ export default function ClientManagement() {
     refetch();
   };
 
+  const getStatusBadge = (status: string) => {
+    const statusOption = statusOptions.find(option => option.value === status);
+    return statusOption || statusOptions[0]; // Default to 'yet-to-start' if not found
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -348,7 +371,7 @@ export default function ClientManagement() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAddClient} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <form onSubmit={handleAddClient} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Client Name *
@@ -392,6 +415,23 @@ export default function ClientManagement() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status *
+                </label>
+                <select
+                  value={newClient.status}
+                  onChange={(e) => setNewClient({ ...newClient, status: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  disabled={addClientMutation.isPending}
+                >
+                  {statusOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Notes
                 </label>
                 <input
@@ -402,7 +442,7 @@ export default function ClientManagement() {
                   disabled={addClientMutation.isPending}
                 />
               </div>
-              <div className="md:col-span-2 lg:col-span-4">
+              <div className="md:col-span-2 lg:col-span-5">
                 <button
                   type="submit"
                   disabled={addClientMutation.isPending}
@@ -427,18 +467,40 @@ export default function ClientManagement() {
           <CSVImport onClose={() => setShowCSVImport(false)} />
         )}
 
-        {/* Month Selector */}
-        <div className="mb-4">
-          <label className="mr-2 font-medium">Month:</label>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="border px-2 py-1 rounded"
-          >
-            {MONTHS.map(m => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Month:</label>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            >
+              {MONTHS.map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="all">All Statuses</option>
+              {statusOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end">
+            <div className="text-sm text-gray-600 px-3 py-2">
+              Showing {filteredClients.length} of {clients?.length || 0} clients
+            </div>
+          </div>
         </div>
 
         {/* Clients Table */}
@@ -449,6 +511,9 @@ export default function ClientManagement() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
                     Client Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Notes
@@ -470,7 +535,7 @@ export default function ClientManagement() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {clients?.map((client) => (
+                {filteredClients.map((client) => (
                   <tr key={client.id} className="hover:bg-gray-50">
                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
                       <Link
@@ -479,6 +544,25 @@ export default function ClientManagement() {
                       >
                         {client.name}
                       </Link>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm">
+                      {editingClient === client.id ? (
+                        <select
+                          value={editedClientData?.status ?? client.status}
+                          onChange={e => setEditedClientData({ ...(editedClientData || {}), status: e.target.value as any })}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          {statusOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(client.status).color}`}>
+                          {getStatusBadge(client.status).label}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-600 max-w-[150px] truncate">
                       {editingClient === client.id ? (
@@ -587,7 +671,15 @@ export default function ClientManagement() {
                         ) : (
                           <>
                             <button
-                              onClick={() => { setEditingClient(client.id); setEditedClientData({ startDate: client.startDate, startWeight: client.startWeight, notes: client.notes }); }}
+                              onClick={() => { 
+                                setEditingClient(client.id); 
+                                setEditedClientData({ 
+                                  startDate: client.startDate, 
+                                  startWeight: client.startWeight, 
+                                  notes: client.notes,
+                                  status: client.status
+                                }); 
+                              }}
                               className="text-blue-600 hover:text-blue-800"
                             >
                               <Edit className="w-4 h-4" />
@@ -614,6 +706,12 @@ export default function ClientManagement() {
             </table>
           </div>
         </div>
+
+        {filteredClients.length === 0 && clients && clients.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-600">No clients found with the selected status filter.</p>
+          </div>
+        )}
 
         {clients?.length === 0 && (
           <div className="text-center py-8">

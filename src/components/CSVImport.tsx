@@ -24,6 +24,7 @@ interface ClientData {
   startDate: string;
   startWeight: number;
   notes: string;
+  status: 'active' | 'inactive' | 'yet-to-start' | 'completed';
   // month -> day -> weight
   weights: { [month: string]: { [day: string]: number } };
 }
@@ -58,6 +59,7 @@ export default function CSVImport({ onClose }: CSVImportProps) {
         startDate: '',
         startWeight: 0,
         notes: '',
+        status: 'yet-to-start',
         weights: {}
       };
       
@@ -101,6 +103,12 @@ export default function CSVImport({ onClose }: CSVImportProps) {
           case 'notes':
           case 'note':
             client.notes = value;
+            break;
+          case 'status':
+            const statusValue = value.toLowerCase().replace(/\s+/g, '-');
+            if (['active', 'inactive', 'yet-to-start', 'completed'].includes(statusValue)) {
+              client.status = statusValue as any;
+            }
             break;
           default:
             // Check if it's a day column (day1, day2, etc.)
@@ -218,9 +226,9 @@ export default function CSVImport({ onClose }: CSVImportProps) {
   };
 
   const downloadTemplate = () => {
-    const template = `name,start_date,start_weight,notes,day1,day2,day3,day4,day5,day6,day7,day8,day9,day10,day11,day12,day13,day14,day15,day16,day17,day18,day19,day20,day21,day22,day23,day24,day25,day26,day27,day28,day29,day30,day31
-John Doe,2024-01-01,80.5,Initial consultation,80.5,80.2,79.8,79.5,79.2,78.9,78.6,78.3,78.0,77.7,77.4,77.1,76.8,76.5,76.2,75.9,75.6,75.3,75.0,74.7,74.4,74.1,73.8,73.5,73.2,72.9,72.6,72.3,72.0
-Jane Smith,15-01-2024,65.0,Weight loss program,65.0,64.8,64.5,64.2,64.0,63.7,63.5,63.2,63.0,62.7,62.5,62.2,62.0,61.7,61.5,61.2,61.0,60.7,60.5,60.2,60.0,59.7,59.5,59.2,59.0,58.7,58.5,58.2,58.0`;
+    const template = `name,start_date,start_weight,status,notes,day1,day2,day3,day4,day5,day6,day7,day8,day9,day10,day11,day12,day13,day14,day15,day16,day17,day18,day19,day20,day21,day22,day23,day24,day25,day26,day27,day28,day29,day30,day31
+John Doe,2024-01-01,80.5,active,Initial consultation,80.5,80.2,79.8,79.5,79.2,78.9,78.6,78.3,78.0,77.7,77.4,77.1,76.8,76.5,76.2,75.9,75.6,75.3,75.0,74.7,74.4,74.1,73.8,73.5,73.2,72.9,72.6,72.3,72.0
+Jane Smith,15-01-2024,65.0,yet-to-start,Weight loss program,65.0,64.8,64.5,64.2,64.0,63.7,63.5,63.2,63.0,62.7,62.5,62.2,62.0,61.7,61.5,61.2,61.0,60.7,60.5,60.2,60.0,59.7,59.5,59.2,59.0,58.7,58.5,58.2,58.0`;
     
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -257,6 +265,7 @@ Jane Smith,15-01-2024,65.0,Weight loss program,65.0,64.8,64.5,64.2,64.0,63.7,63.
               <li>Save as CSV file and upload it here</li>
               <li>Weight columns should be named: day1, day2, day3, etc.</li>
               <li>Date format can be: YYYY-MM-DD or DD-MM-YYYY</li>
+              <li>Status can be: active, inactive, yet-to-start, or completed</li>
               <li>Make sure to include client name and at least one weight value</li>
               <li>Empty rows will be automatically skipped</li>
             </ol>
