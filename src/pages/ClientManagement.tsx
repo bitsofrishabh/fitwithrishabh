@@ -9,6 +9,12 @@ import { Toaster, toast } from 'sonner';
 import { onAuthStateChanged } from 'firebase/auth';
 import CSVImport from '../components/CSVImport';
 import { MONTHS, getDaysInMonth } from '../lib/months';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Badge } from '../components/ui/badge';
 
 interface Client {
   id: string;
@@ -17,7 +23,6 @@ interface Client {
   startWeight: number;
   notes: string;
   status: 'active' | 'inactive' | 'yet-to-start' | 'completed';
-  // month -> day -> weight
   weights: Record<string, Record<string, number>>;
   createdAt: any;
 }
@@ -31,10 +36,10 @@ interface NewClient {
 }
 
 const statusOptions = [
-  { value: 'yet-to-start', label: 'Yet to Start', color: 'bg-gray-100 text-gray-800' },
-  { value: 'active', label: 'Active', color: 'bg-green-100 text-green-800' },
-  { value: 'inactive', label: 'Inactive', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'completed', label: 'Completed', color: 'bg-blue-100 text-blue-800' }
+  { value: 'yet-to-start', label: 'Yet to Start', variant: 'secondary' as const },
+  { value: 'active', label: 'Active', variant: 'success' as const },
+  { value: 'inactive', label: 'Inactive', variant: 'warning' as const },
+  { value: 'completed', label: 'Completed', variant: 'default' as const }
 ];
 
 export default function ClientManagement() {
@@ -56,17 +61,10 @@ export default function ClientManagement() {
     status: 'yet-to-start'
   });
 
-  // Monitor auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setAuthUser(user);
-      if (user) {
-        console.log('User authenticated:', user.email);
-      } else {
-        console.log('User not authenticated');
-      }
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -76,25 +74,17 @@ export default function ClientManagement() {
     queryKey: ['clients'],
     queryFn: async () => {
       try {
-        console.log('Fetching clients...');
-        console.log('Auth user:', authUser);
-        console.log('Current user:', auth.currentUser);
-        
         if (!auth.currentUser) {
           throw new Error('User not authenticated');
         }
 
         const snapshot = await getDocs(collection(db, 'clients'));
-        console.log('Clients fetched successfully:', snapshot.size, 'documents');
-        
         return snapshot.docs.map(doc => {
           const data = doc.data() as Client;
           let weights = data.weights || {};
-          // migrate old flat structure
           if (weights && !MONTHS.some(m => m in weights)) {
             weights = { [MONTHS[0]]: weights as any };
           }
-          // Add default status if not present
           const status = data.status || 'yet-to-start';
           return { id: doc.id, ...data, weights, status } as Client;
         });
@@ -103,44 +93,28 @@ export default function ClientManagement() {
         throw error;
       }
     },
-    enabled: !!authUser, // Only run query when user is authenticated
-    retry: (failureCount, error) => {
-      console.log('Query retry attempt:', failureCount, error);
-      return failureCount < 2; // Retry up to 2 times
-    },
+    enabled: !!authUser,
+    retry: 2,
     retryDelay: 1000,
   });
 
-  // Filter clients by status
   const filteredClients = clients?.filter(client => 
     statusFilter === 'all' || client.status === statusFilter
   ) || [];
 
   const addClientMutation = useMutation({
     mutationFn: async (clientData: NewClient) => {
-      try {
-        console.log('Adding client:', clientData);
-        
-        if (!auth.currentUser) {
-          throw new Error('User not authenticated');
-        }
-        
-        if (!clientData.name || !clientData.startDate || !clientData.startWeight) {
-          throw new Error('Please fill in all required fields');
-        }
-        
-        const docRef = await addDoc(collection(db, 'clients'), {
-          ...clientData,
-          weights: {},
-          createdAt: serverTimestamp()
-        });
-        
-        console.log('Client added successfully with ID:', docRef.id);
-        return docRef;
-      } catch (error) {
-        console.error('Error adding client:', error);
-        throw error;
+      if (!auth.currentUser) throw new Error('User not authenticated');
+      if (!clientData.name || !clientData.startDate || !clientData.startWeight) {
+        throw new Error('Please fill in all required fields');
       }
+      
+      const docRef = await addDoc(collection(db, 'clients'), {
+        ...clientData,
+        weights: {},
+        createdAt: serverTimestamp()
+      });
+      return docRef;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -149,35 +123,18 @@ export default function ClientManagement() {
       toast.success('Client added successfully!');
     },
     onError: (error: any) => {
-      console.error('Add client error:', error);
       toast.error(error.message || 'Failed to add client');
     }
   });
 
   const updateWeightMutation = useMutation({
     mutationFn: async ({ clientId, month, day, weight }: { clientId: string, month: string, day: string, weight: number }) => {
-      try {
-        console.log('Updating weight:', { clientId, month, day, weight });
-        
-        if (!auth.currentUser) {
-          throw new Error('User not authenticated');
-        }
-        
-        const client = clients?.find(c => c.id === clientId);
-        if (!client) {
-          throw new Error('Client not found');
-        }
-        
-        const clientRef = doc(db, 'clients', clientId);
-        await updateDoc(clientRef, {
-          [`weights.${month}.${day}`]: weight
-        });
-        
-        console.log('Weight updated successfully');
-      } catch (error) {
-        console.error('Error updating weight:', error);
-        throw error;
-      }
+      if (!auth.currentUser) throw new Error('User not authenticated');
+      
+      const clientRef = doc(db, 'clients', clientId);
+      await updateDoc(clientRef, {
+        [`weights.${month}.${day}`]: weight
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -185,28 +142,16 @@ export default function ClientManagement() {
       toast.success('Weight updated successfully!');
     },
     onError: (error: any) => {
-      console.error('Update weight error:', error);
       toast.error(error.message || 'Failed to update weight');
     }
   });
 
   const updateClientMutation = useMutation({
     mutationFn: async ({ clientId, updates }: { clientId: string, updates: Partial<Client> }) => {
-      try {
-        console.log('Updating client:', { clientId, updates });
-        
-        if (!auth.currentUser) {
-          throw new Error('User not authenticated');
-        }
-        
-        const clientRef = doc(db, 'clients', clientId);
-        await updateDoc(clientRef, updates);
-        
-        console.log('Client updated successfully');
-      } catch (error) {
-        console.error('Error updating client:', error);
-        throw error;
-      }
+      if (!auth.currentUser) throw new Error('User not authenticated');
+      
+      const clientRef = doc(db, 'clients', clientId);
+      await updateDoc(clientRef, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -214,33 +159,20 @@ export default function ClientManagement() {
       toast.success('Client updated successfully!');
     },
     onError: (error: any) => {
-      console.error('Update client error:', error);
       toast.error(error.message || 'Failed to update client');
     }
   });
 
   const deleteClientMutation = useMutation({
     mutationFn: async (clientId: string) => {
-      try {
-        console.log('Deleting client:', clientId);
-        
-        if (!auth.currentUser) {
-          throw new Error('User not authenticated');
-        }
-        
-        await deleteDoc(doc(db, 'clients', clientId));
-        console.log('Client deleted successfully');
-      } catch (error) {
-        console.error('Error deleting client:', error);
-        throw error;
-      }
+      if (!auth.currentUser) throw new Error('User not authenticated');
+      await deleteDoc(doc(db, 'clients', clientId));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast.success('Client deleted successfully!');
     },
     onError: (error: any) => {
-      console.error('Delete client error:', error);
       toast.error(error.message || 'Failed to delete client');
     }
   });
@@ -269,57 +201,48 @@ export default function ClientManagement() {
     }
   };
 
-  const handleRetry = () => {
-    refetch();
-  };
-
   const getStatusBadge = (status: string) => {
     const statusOption = statusOptions.find(option => option.value === status);
-    return statusOption || statusOptions[0]; // Default to 'yet-to-start' if not found
+    return statusOption || statusOptions[0];
   };
 
-  // Loading state
   if (isLoading) {
     return (
-      <div className="pt-24 pb-16">
-        <div className="w-full px-4">
+      <div className="pt-24 pb-16 min-h-screen bg-background">
+        <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-teal-600 mb-4" />
-            <p className="text-lg text-gray-600 mb-2">Loading clients...</p>
-            <p className="text-sm text-gray-500">Please wait while we fetch your client data</p>
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+            <p className="text-lg text-foreground/80 mb-2">Loading clients...</p>
+            <p className="text-sm text-muted-foreground">Please wait while we fetch your client data</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="pt-24 pb-16">
-        <div className="w-full px-4">
+      <div className="pt-24 pb-16 min-h-screen bg-background">
+        <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="text-center max-w-md">
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Clients</h2>
-              <p className="text-gray-600 mb-4">
-                {error.message.includes('permissions') 
-                  ? 'You don\'t have permission to access client data. Please make sure you\'re logged in with the correct account.'
-                  : error.message || 'An error occurred while loading client data.'
-                }
-              </p>
-              <div className="space-y-2">
-                <button
-                  onClick={handleRetry}
-                  className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition"
-                >
+            <Card className="max-w-md text-center">
+              <CardContent className="pt-6">
+                <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+                <h2 className="text-xl font-semibold mb-2">Unable to Load Clients</h2>
+                <p className="text-muted-foreground mb-4">
+                  {error.message.includes('permissions') 
+                    ? 'You don\'t have permission to access client data.'
+                    : error.message || 'An error occurred while loading client data.'
+                  }
+                </p>
+                <Button onClick={() => refetch()}>
                   Try Again
-                </button>
-                <div className="text-sm text-gray-500">
+                </Button>
+                <div className="text-sm text-muted-foreground mt-2">
                   Current user: {authUser?.email || 'Not logged in'}
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
@@ -327,139 +250,139 @@ export default function ClientManagement() {
   }
 
   return (
-    <div className="pt-24 pb-16">
+    <div className="pt-24 pb-16 min-h-screen bg-background">
       <Toaster position="top-center" />
-      <div className="w-full px-4">
+      <div className="container mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
-            <p className="text-gray-600 mt-1">Logged in as: {authUser?.email}</p>
+            <h1 className="text-4xl font-bold text-gradient mb-2">Client Management</h1>
+            <p className="text-muted-foreground">Logged in as: {authUser?.email}</p>
           </div>
           <div className="flex gap-3">
-            <button
+            <Button
               onClick={() => setShowCSVImport(true)}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              variant="outline"
+              className="border-primary/20 hover:bg-primary/10"
             >
-              <Upload className="w-5 h-5" />
+              <Upload className="w-4 h-4 mr-2" />
               Import CSV
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setShowAddForm(true)}
               disabled={addClientMutation.isPending}
-              className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
+              className="bg-primary hover:bg-primary/90"
             >
               {addClientMutation.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4 mr-2" />
               )}
               Add Client
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Add Client Form */}
         {showAddForm && (
-          <div className="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Add New Client</h2>
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="text-gray-500 hover:text-gray-700"
-                disabled={addClientMutation.isPending}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleAddClient} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newClient.name}
-                  onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  disabled={addClientMutation.isPending}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={newClient.startDate}
-                  onChange={(e) => setNewClient({ ...newClient, startDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  disabled={addClientMutation.isPending}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Weight (kg) *
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  required
-                  value={newClient.startWeight || ''}
-                  onChange={(e) => setNewClient({ ...newClient, startWeight: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  disabled={addClientMutation.isPending}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status *
-                </label>
-                <select
-                  value={newClient.status}
-                  onChange={(e) => setNewClient({ ...newClient, status: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+          <Card className="mb-8 border-primary/20">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Add New Client</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddForm(false)}
                   disabled={addClientMutation.isPending}
                 >
-                  {statusOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes
-                </label>
-                <input
-                  type="text"
-                  value={newClient.notes}
-                  onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  disabled={addClientMutation.isPending}
-                />
-              </div>
-              <div className="md:col-span-2 lg:col-span-5">
-                <button
-                  type="submit"
-                  disabled={addClientMutation.isPending}
-                  className="inline-flex items-center gap-2 bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
-                >
-                  {addClientMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Adding...
-                    </>
-                  ) : (
-                    'Add Client'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleAddClient} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                  <Label htmlFor="name">Client Name *</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    required
+                    value={newClient.name}
+                    onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+                    disabled={addClientMutation.isPending}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="startDate">Start Date *</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    required
+                    value={newClient.startDate}
+                    onChange={(e) => setNewClient({ ...newClient, startDate: e.target.value })}
+                    disabled={addClientMutation.isPending}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="startWeight">Start Weight (kg) *</Label>
+                  <Input
+                    id="startWeight"
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    required
+                    value={newClient.startWeight || ''}
+                    onChange={(e) => setNewClient({ ...newClient, startWeight: parseFloat(e.target.value) || 0 })}
+                    disabled={addClientMutation.isPending}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="status">Status *</Label>
+                  <Select
+                    value={newClient.status}
+                    onValueChange={(value: any) => setNewClient({ ...newClient, status: value })}
+                    disabled={addClientMutation.isPending}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="notes">Notes</Label>
+                  <Input
+                    id="notes"
+                    type="text"
+                    value={newClient.notes}
+                    onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
+                    disabled={addClientMutation.isPending}
+                  />
+                </div>
+                <div className="md:col-span-2 lg:col-span-5">
+                  <Button
+                    type="submit"
+                    disabled={addClientMutation.isPending}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {addClientMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      'Add Client'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         )}
 
         {/* CSV Import Modal */}
@@ -468,254 +391,266 @@ export default function ClientManagement() {
         )}
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Month:</label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-            >
-              {MONTHS.map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status:</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="all">All Statuses</option>
-              {statusOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-end">
-            <div className="text-sm text-gray-600 px-3 py-2">
-              Showing {filteredClients.length} of {clients?.length || 0} clients
+        <Card className="mb-6 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-end">
+              <div>
+                <Label htmlFor="month">Month:</Label>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTHS.map(m => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status">Status:</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    {statusOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredClients.length} of {clients?.length || 0} clients
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Clients Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
-                    Client Name
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Notes
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Start Date
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Start Weight
-                  </th>
-                  {days.map(day => (
-                    <th key={day} className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[60px]">
-                      {day}
+        <Card className="border-primary/20">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="min-w-full w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider sticky left-0 bg-muted/50 z-10">
+                      Client Name
                     </th>
-                  ))}
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredClients.map((client) => (
-                  <tr key={client.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
-                      <Link
-                        to={`/admin/clients/${client.id}`}
-                        className="text-teal-600 hover:text-teal-800"
-                      >
-                        {client.name}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm">
-                      {editingClient === client.id ? (
-                        <select
-                          value={editedClientData?.status ?? client.status}
-                          onChange={e => setEditedClientData({ ...(editedClientData || {}), status: e.target.value as any })}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm"
-                        >
-                          {statusOptions.map(option => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(client.status).color}`}>
-                          {getStatusBadge(client.status).label}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-600 max-w-[150px] truncate">
-                      {editingClient === client.id ? (
-                        <input
-                          type="text"
-                          value={editedClientData?.notes ?? client.notes}
-                          onChange={e => setEditedClientData({ ...(editedClientData || {}), notes: e.target.value })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded"
-                        />
-                      ) : (
-                        client.notes
-                      )}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {editingClient === client.id ? (
-                        <input
-                          type="date"
-                          value={editedClientData?.startDate ?? client.startDate}
-                          onChange={e => setEditedClientData({ ...(editedClientData || {}), startDate: e.target.value })}
-                          className="px-2 py-1 border border-gray-300 rounded"
-                        />
-                      ) : (
-                        client.startDate
-                      )}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {editingClient === client.id ? (
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={editedClientData?.startWeight ?? client.startWeight}
-                          onChange={e => setEditedClientData({ ...(editedClientData || {}), startWeight: parseFloat(e.target.value) })}
-                          className="w-20 px-2 py-1 border border-gray-300 rounded"
-                        />
-                      ) : (
-                        `${client.startWeight} kg`
-                      )}
-                    </td>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Notes
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Start Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Start Weight
+                    </th>
                     {days.map(day => (
-                      <td key={day} className="px-3 py-4 text-center text-sm">
-                        {editingWeight?.clientId === client.id && editingWeight?.day === day ? (
-                          <input
-                            type="number"
-                            step="0.1"
-                            min="1"
-                            defaultValue={client.weights[selectedMonth]?.[day] || ''}
-                            onBlur={(e) => {
-                              if (e.target.value) {
-                                handleWeightUpdate(client.id, day, e.target.value);
-                              } else {
-                                setEditingWeight(null);
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                handleWeightUpdate(client.id, day, e.currentTarget.value);
-                              } else if (e.key === 'Escape') {
-                                setEditingWeight(null);
-                              }
-                            }}
-                            className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-teal-500"
-                            autoFocus
-                            disabled={updateWeightMutation.isPending}
-                          />
-                        ) : (
-                          <div
-                            onClick={() => setEditingWeight({ clientId: client.id, day })}
-                            className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded min-h-[24px] flex items-center justify-center"
+                      <th key={day} className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider min-w-[60px]">
+                        {day}
+                      </th>
+                    ))}
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredClients.map((client) => (
+                    <tr key={client.id} className="hover:bg-muted/50 transition-colors">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium sticky left-0 bg-background z-10">
+                        <Link
+                          to={`/admin/clients/${client.id}`}
+                          className="text-primary hover:text-primary/80 transition-colors"
+                        >
+                          {client.name}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm">
+                        {editingClient === client.id ? (
+                          <Select
+                            value={editedClientData?.status ?? client.status}
+                            onValueChange={(value: any) => setEditedClientData({ ...(editedClientData || {}), status: value })}
                           >
-                            {updateWeightMutation.isPending &&
-                             editingWeight?.clientId === client.id &&
-                             editingWeight?.day === day ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              client.weights[selectedMonth]?.[day] || '-'
-                            )}
-                          </div>
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusOptions.map(option => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant={getStatusBadge(client.status).variant}>
+                            {getStatusBadge(client.status).label}
+                          </Badge>
                         )}
                       </td>
-                    ))}
-                    <td className="px-4 py-4 whitespace-nowrap text-center">
-                      <div className="flex justify-center gap-2">
+                      <td className="px-4 py-4 text-sm text-muted-foreground max-w-[150px] truncate">
                         {editingClient === client.id ? (
-                          <>
-                            <button
-                              onClick={() => {
-                                if (editedClientData) {
-                                  updateClientMutation.mutate({ clientId: client.id, updates: editedClientData });
+                          <Input
+                            type="text"
+                            value={editedClientData?.notes ?? client.notes}
+                            onChange={e => setEditedClientData({ ...(editedClientData || {}), notes: e.target.value })}
+                            className="w-full"
+                          />
+                        ) : (
+                          client.notes
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                        {editingClient === client.id ? (
+                          <Input
+                            type="date"
+                            value={editedClientData?.startDate ?? client.startDate}
+                            onChange={e => setEditedClientData({ ...(editedClientData || {}), startDate: e.target.value })}
+                          />
+                        ) : (
+                          client.startDate
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                        {editingClient === client.id ? (
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={editedClientData?.startWeight ?? client.startWeight}
+                            onChange={e => setEditedClientData({ ...(editedClientData || {}), startWeight: parseFloat(e.target.value) })}
+                            className="w-20"
+                          />
+                        ) : (
+                          `${client.startWeight} kg`
+                        )}
+                      </td>
+                      {days.map(day => (
+                        <td key={day} className="px-3 py-4 text-center text-sm">
+                          {editingWeight?.clientId === client.id && editingWeight?.day === day ? (
+                            <Input
+                              type="number"
+                              step="0.1"
+                              min="1"
+                              defaultValue={client.weights[selectedMonth]?.[day] || ''}
+                              onBlur={(e) => {
+                                if (e.target.value) {
+                                  handleWeightUpdate(client.id, day, e.target.value);
                                 } else {
-                                  setEditingClient(null);
+                                  setEditingWeight(null);
                                 }
                               }}
-                              className="text-teal-600 hover:text-teal-800"
-                              disabled={updateClientMutation.isPending}
-                            >
-                              {updateClientMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            </button>
-                            <button
-                              onClick={() => { setEditingClient(null); setEditedClientData(null); }}
-                              className="text-gray-600 hover:text-gray-800"
-                              disabled={updateClientMutation.isPending}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => { 
-                                setEditingClient(client.id); 
-                                setEditedClientData({ 
-                                  startDate: client.startDate, 
-                                  startWeight: client.startWeight, 
-                                  notes: client.notes,
-                                  status: client.status
-                                }); 
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleWeightUpdate(client.id, day, e.currentTarget.value);
+                                } else if (e.key === 'Escape') {
+                                  setEditingWeight(null);
+                                }
                               }}
-                              className="text-blue-600 hover:text-blue-800"
+                              className="w-16 text-center"
+                              autoFocus
+                              disabled={updateWeightMutation.isPending}
+                            />
+                          ) : (
+                            <div
+                              onClick={() => setEditingWeight({ clientId: client.id, day })}
+                              className="cursor-pointer hover:bg-muted rounded px-2 py-1 min-h-[24px] flex items-center justify-center transition-colors"
                             >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClient(client.id, client.name)}
-                              className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                              title="Delete Client"
-                              disabled={deleteClientMutation.isPending}
-                            >
-                              {deleteClientMutation.isPending ? (
+                              {updateWeightMutation.isPending &&
+                               editingWeight?.clientId === client.id &&
+                               editingWeight?.day === day ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
-                                <Trash2 className="w-4 h-4" />
+                                client.weights[selectedMonth]?.[day] || '-'
                               )}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                            </div>
+                          )}
+                        </td>
+                      ))}
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <div className="flex justify-center gap-2">
+                          {editingClient === client.id ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  if (editedClientData) {
+                                    updateClientMutation.mutate({ clientId: client.id, updates: editedClientData });
+                                  } else {
+                                    setEditingClient(null);
+                                  }
+                                }}
+                                disabled={updateClientMutation.isPending}
+                              >
+                                {updateClientMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => { setEditingClient(null); setEditedClientData(null); }}
+                                disabled={updateClientMutation.isPending}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => { 
+                                  setEditingClient(client.id); 
+                                  setEditedClientData({ 
+                                    startDate: client.startDate, 
+                                    startWeight: client.startWeight, 
+                                    notes: client.notes,
+                                    status: client.status
+                                  }); 
+                                }}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteClient(client.id, client.name)}
+                                disabled={deleteClientMutation.isPending}
+                              >
+                                {deleteClientMutation.isPending ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
         {filteredClients.length === 0 && clients && clients.length > 0 && (
           <div className="text-center py-8">
-            <p className="text-gray-600">No clients found with the selected status filter.</p>
+            <p className="text-muted-foreground">No clients found with the selected status filter.</p>
           </div>
         )}
 
         {clients?.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-gray-600">No clients found. Add your first client to get started!</p>
+            <p className="text-muted-foreground">No clients found. Add your first client to get started!</p>
           </div>
         )}
       </div>
