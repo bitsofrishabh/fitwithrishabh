@@ -2,6 +2,11 @@ import React from 'react';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Toaster, toast } from 'sonner';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ContactFormData {
   name: string;
@@ -21,7 +26,6 @@ export default function Contact() {
 
   const onSubmit = async (data: ContactFormData) => {
     try {
-      // Format the message for WhatsApp
       const message = `
 New Contact Form Submission:
 📝 Name: ${data.name}
@@ -36,22 +40,11 @@ New Contact Form Submission:
 🏥 Health issues/Fitness Goals: ${data.healthIssues}
       `.trim();
 
-      // Encode the message for WhatsApp URL
       const encodedMessage = encodeURIComponent(message);
-      
-      // Your WhatsApp number
-      const whatsappNumber = '919876543210'; // Replace with your actual number
-      
-      // Create WhatsApp URL
+      const whatsappNumber = '919876543210';
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
-      
-      // Open WhatsApp in a new tab
       window.open(whatsappUrl, '_blank');
-      
-      // Show success message
       toast.success('Form submitted successfully! Redirecting to WhatsApp...');
-      
-      // Reset form
       reset();
     } catch (error) {
       toast.error('Failed to submit form. Please try again.');
@@ -59,162 +52,118 @@ New Contact Form Submission:
   };
 
   return (
-    <section className="py-20 bg-gray-50" id="contact">
+    <section className="py-20 bg-background" id="contact">
       <Toaster position="top-center" />
       <div className="container mx-auto px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Get in Touch</h2>
-            <p className="text-lg md:text-xl text-gray-600">
+            <h2 className="text-3xl md:text-4xl font-bold text-gradient mb-4">Get in Touch</h2>
+            <p className="text-lg md:text-xl text-muted-foreground">
               Have questions? We're here to help you on your wellness journey
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12">
-            <div className="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
-              <Phone className="w-8 h-8 text-teal-600 mb-4" />
-              <h3 className="font-semibold mb-2">Phone</h3>
-              <p className="text-gray-600 text-center">+1 (555) 123-4567</p>
-            </div>
-            <div className="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
-              <Mail className="w-8 h-8 text-teal-600 mb-4" />
-              <h3 className="font-semibold mb-2">Email</h3>
-              <p className="text-gray-600 text-center break-all">contact@healthybusiness.com</p>
-            </div>
-            <div className="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
-              <MapPin className="w-8 h-8 text-teal-600 mb-4" />
-              <h3 className="font-semibold mb-2">Location</h3>
-              <p className="text-gray-600 text-center">123 Wellness Street, Health City</p>
-            </div>
+            <Card className="text-center border-primary/20">
+              <CardContent className="p-6 flex flex-col items-center gap-2">
+                <Phone className="w-8 h-8 text-primary" />
+                <h3 className="font-semibold">Phone</h3>
+                <p className="text-muted-foreground">+1 (555) 123-4567</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center border-primary/20">
+              <CardContent className="p-6 flex flex-col items-center gap-2">
+                <Mail className="w-8 h-8 text-primary" />
+                <h3 className="font-semibold">Email</h3>
+                <p className="text-muted-foreground break-all">contact@healthybusiness.com</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center border-primary/20">
+              <CardContent className="p-6 flex flex-col items-center gap-2">
+                <MapPin className="w-8 h-8 text-primary" />
+                <h3 className="font-semibold">Location</h3>
+                <p className="text-muted-foreground">123 Wellness Street, Health City</p>
+              </CardContent>
+            </Card>
           </div>
-          <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 md:p-8 rounded-xl shadow-lg">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Name *
-                </label>
-                <input
-                  {...register('name', { required: 'Name is required' })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Age *
-                </label>
-                <input
-                  {...register('age', { required: 'Age is required' })}
-                  type="number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.age && <p className="text-red-500 text-sm mt-1">{errors.age.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  City *
-                </label>
-                <input
-                  {...register('city', { required: 'City is required' })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Height (cm) *
-                </label>
-                <input
-                  {...register('height', { required: 'Height is required' })}
-                  type="number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.height && <p className="text-red-500 text-sm mt-1">{errors.height.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Weight (kg) *
-                </label>
-                <input
-                  {...register('weight', { required: 'Weight is required' })}
-                  type="number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.weight && <p className="text-red-500 text-sm mt-1">{errors.weight.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Goal Weight (kg) *
-                </label>
-                <input
-                  {...register('goalWeight', { required: 'Goal weight is required' })}
-                  type="number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.goalWeight && <p className="text-red-500 text-sm mt-1">{errors.goalWeight.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Work/Profession *
-                </label>
-                <input
-                  {...register('profession', { required: 'Profession is required' })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.profession && <p className="text-red-500 text-sm mt-1">{errors.profession.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
-                </label>
-                <input
-                  {...register('email', { 
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: "Invalid email address"
-                    }
-                  })}
-                  type="email"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone *
-                </label>
-                <input
-                  {...register('phone', { 
-                    required: 'Phone is required',
-                    pattern: {
-                      value: /^[0-9]{10}$/,
-                      message: "Please enter a valid 10-digit phone number"
-                    }
-                  })}
-                  type="tel"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
-              </div>
-            </div>
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Health Issues/Fitness Goals *
-              </label>
-              <textarea
-                {...register('healthIssues', { required: 'This field is required' })}
-                rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-              />
-              {errors.healthIssues && <p className="text-red-500 text-sm mt-1">{errors.healthIssues.message}</p>}
-            </div>
-            <button
-              type="submit"
-              className="w-full mt-6 bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 transition"
-            >
-              Send Message
-            </button>
-          </form>
+          <Card className="border-primary/20">
+            <CardContent className="p-6 md:p-8">
+              <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="name">Name *</Label>
+                  <Input id="name" {...register('name', { required: 'Name is required' })} />
+                  {errors.name && <p className="text-destructive text-sm mt-1">{errors.name.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="age">Age *</Label>
+                  <Input id="age" type="number" {...register('age', { required: 'Age is required' })} />
+                  {errors.age && <p className="text-destructive text-sm mt-1">{errors.age.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="city">City *</Label>
+                  <Input id="city" {...register('city', { required: 'City is required' })} />
+                  {errors.city && <p className="text-destructive text-sm mt-1">{errors.city.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="height">Height (cm) *</Label>
+                  <Input id="height" type="number" {...register('height', { required: 'Height is required' })} />
+                  {errors.height && <p className="text-destructive text-sm mt-1">{errors.height.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="weight">Current Weight (kg) *</Label>
+                  <Input id="weight" type="number" {...register('weight', { required: 'Weight is required' })} />
+                  {errors.weight && <p className="text-destructive text-sm mt-1">{errors.weight.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="goalWeight">Goal Weight (kg) *</Label>
+                  <Input id="goalWeight" type="number" {...register('goalWeight', { required: 'Goal weight is required' })} />
+                  {errors.goalWeight && <p className="text-destructive text-sm mt-1">{errors.goalWeight.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="profession">Work/Profession *</Label>
+                  <Input id="profession" {...register('profession', { required: 'Profession is required' })} />
+                  {errors.profession && <p className="text-destructive text-sm mt-1">{errors.profession.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...register('email', {
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Invalid email address',
+                      },
+                    })}
+                  />
+                  {errors.email && <p className="text-destructive text-sm mt-1">{errors.email.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone *</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    {...register('phone', {
+                      required: 'Phone is required',
+                      pattern: {
+                        value: /^[0-9]{10}$/,
+                        message: 'Please enter a valid 10-digit phone number',
+                      },
+                    })}
+                  />
+                  {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone.message}</p>}
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="healthIssues">Health Issues/Fitness Goals *</Label>
+                  <Textarea id="healthIssues" rows={4} {...register('healthIssues', { required: 'This field is required' })} />
+                  {errors.healthIssues && <p className="text-destructive text-sm mt-1">{errors.healthIssues.message}</p>}
+                </div>
+                <div className="md:col-span-2">
+                  <Button type="submit" className="w-full">Send Message</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>
