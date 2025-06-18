@@ -391,8 +391,9 @@ export default function ClientProfile() {
                   </p>
                 )}
               </div>
-              <div className="p-3 bg-primary rounded-full">
-                <Target className="w-6 h-6 text-purple-600" />
+
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Target className="w-6 h-6 text-primary" />
               </div>
             </div>
           </motion.div>
@@ -529,13 +530,15 @@ export default function ClientProfile() {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Zap className="w-5 h-5 text-purple-600" />
+                    <Zap className="w-5 h-5 text-primary" />
                     <span className="font-medium">Motivation</span>
                   </div>
-                  <span className="text-purple-600 font-semibold">
-                    {client.status === "active" ? "High" : "Moderate"}
+
+                  <span className="text-primary font-semibold">
+                    {client.status === 'active' ? 'High' : 'Moderate'}
+
                   </span>
                 </div>
 
