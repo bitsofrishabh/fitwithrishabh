@@ -12,15 +12,14 @@ import Products from './pages/Products';
 import Schedule from './pages/Schedule';
 import ClientManagement from './pages/ClientManagement';
 import ClientProfile from './pages/ClientProfile';
-import Home from './pages/Home';
 import Terms from './pages/Terms';
 
 const queryClient = new QueryClient();
 
 export default function App() {
   useEffect(() => {
-    // Set dark mode by default
-    document.documentElement.classList.add('dark');
+    // Ensure the app stays in light mode
+    document.documentElement.classList.remove('dark');
   }, []);
 
   return (
@@ -30,7 +29,7 @@ export default function App() {
           <Navbar />
           <main>
             <Routes>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<WorkoutSection />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin/clients" element={<ClientManagement />} />
               <Route path="/admin/clients/:id" element={<ClientProfile />} />

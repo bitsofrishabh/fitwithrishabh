@@ -1,5 +1,5 @@
-FitWithRishabh
-===============
+The Balance Diet
+================
 
 This project is a fitness coaching platform built with React, TypeScript and Vite. It uses the **shadcn/ui** component library for a modern dark UI with blue accents.
 

@@ -8,7 +8,7 @@ const products = [
     description: "Pure and natural green tea for health and wellness",
     price: "₹199",
     rating: 4.5,
-    image: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/51KJjtMLyRL._SL800_.jpg",
     link: "https://amzn.to/3FrpiFa",
     category: "Green Tea"
   },
@@ -17,7 +17,7 @@ const products = [
     description: "Soothing chamomile tea for relaxation and better sleep",
     price: "₹299",
     rating: 4.4,
-    image: "https://images.unsplash.com/photo-1597318181409-cf64d0b5d8a2",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/61CGFIrP6vL._SL800_.jpg",
     link: "https://amzn.to/4mAOz0f",
     category: "Green Tea"
   },
@@ -26,7 +26,7 @@ const products = [
     description: "Refreshing spearmint blue tea blend",
     price: "₹249",
     rating: 4.3,
-    image: "https://images.unsplash.com/photo-1597318181409-cf64d0b5d8a2",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/61rp+yZaF3L._SL800_.jpg",
     link: "https://amzn.to/43ixKzD",
     category: "Green Tea"
   },
@@ -35,7 +35,7 @@ const products = [
     description: "Traditional tulsi tea for immunity and wellness",
     price: "₹179",
     rating: 4.6,
-    image: "https://images.unsplash.com/photo-1597318181409-cf64d0b5d8a2",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/71SiNyGcXTL._SL800_.jpg",
     link: "https://amzn.to/4joY1RA",
     category: "Green Tea"
   },
@@ -46,7 +46,7 @@ const products = [
     description: "Raw, unfiltered apple cider vinegar with mother",
     price: "₹399",
     rating: 4.5,
-    image: "https://images.unsplash.com/photo-1598346762291-aee88549193f",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/61pvURwwf+L._SL800_.jpg",
     link: "https://amzn.in/d/1og3eCX",
     category: "Apple Cider Vinegar"
   },
@@ -55,7 +55,7 @@ const products = [
     description: "Premium Himalayan apple cider vinegar",
     price: "₹449",
     rating: 4.6,
-    image: "https://images.unsplash.com/photo-1598346762291-aee88549193f",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/61fFHy85NsL._SL800_.jpg",
     link: "https://amzn.in/d/3BFiGXi",
     category: "Apple Cider Vinegar"
   },
@@ -64,7 +64,7 @@ const products = [
     description: "Convenient ACV tablets for on-the-go wellness",
     price: "₹599",
     rating: 4.3,
-    image: "https://images.unsplash.com/photo-1598346762291-aee88549193f",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/71csSCzsEeL._SL800_.jpg",
     link: "https://amzn.to/4dW7ejn",
     category: "Apple Cider Vinegar"
   },
@@ -75,7 +75,7 @@ const products = [
     description: "Premium quality mixed seeds for daily nutrition",
     price: "₹499",
     rating: 4.7,
-    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/71JaTcpsCvL._SL800_.jpg",
     link: "https://amzn.to/4jp1yzh",
     category: "Seeds"
   },
@@ -84,7 +84,7 @@ const products = [
     description: "Nutritious blend of seven essential seeds",
     price: "₹449",
     rating: 4.6,
-    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/51uO0UqUT4L._SL800_.jpg",
     link: "https://amzn.in/d/9sCA51p",
     category: "Seeds"
   },
@@ -93,7 +93,7 @@ const products = [
     description: "Premium quality Brazil nuts rich in selenium",
     price: "₹799",
     rating: 4.8,
-    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/6152dh2AVWL._SL800_.jpg",
     link: "https://amzn.to/3FfFEAG",
     category: "Dry Fruits"
   },
@@ -102,7 +102,7 @@ const products = [
     description: "Premium California almonds",
     price: "₹699",
     rating: 4.7,
-    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/61k9pRUHftL._SL800_.jpg",
     link: "https://amzn.in/d/cRRBooR",
     category: "Dry Fruits"
   },
@@ -113,7 +113,7 @@ const products = [
     description: "100% whole grain rolled oats",
     price: "₹299",
     rating: 4.5,
-    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/71Lj7hjwfqL._SL800_.jpg",
     link: "https://amzn.in/d/hxnFVnv",
     category: "Grains"
   },
@@ -122,7 +122,7 @@ const products = [
     description: "High protein oats for fitness enthusiasts",
     price: "₹349",
     rating: 4.6,
-    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/81Q60Bb0cDL._SL800_.jpg",
     link: "https://amzn.to/4myu2cy",
     category: "Grains"
   },
@@ -131,7 +131,7 @@ const products = [
     description: "Classic rolled oats for healthy breakfast",
     price: "₹199",
     rating: 4.7,
-    image: "https://images.unsplash.com/photo-1599002354737-0d0426569d3e",
+    image: "https://images-eu.ssl-images-amazon.com/images/I/71d0wtpbxJL._SL800_.jpg",
     link: "https://amzn.in/d/f7ICOu5",
     category: "Grains"
   }
