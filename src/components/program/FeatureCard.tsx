@@ -1,5 +1,5 @@
-import React from 'react';
 import * as Icons from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface FeatureCardProps {
   title: string;
@@ -9,14 +9,14 @@ interface FeatureCardProps {
 }
 
 export default function FeatureCard({ title, description, icon, className = '' }: FeatureCardProps) {
-  const Icon = Icons[icon as keyof typeof Icons] || Icons.Circle;
+  const IconComponent = (Icons[icon as keyof typeof Icons] as LucideIcon) || Icons.Circle;
 
   return (
     <div className={`group p-6 bg-white rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${className}`}>
       <div className="flex items-start gap-4">
         <div className="flex-shrink-0">
           <div className="p-3 bg-teal-50 rounded-lg group-hover:bg-teal-100 transition-colors duration-300">
-            <Icon className="w-6 h-6 text-teal-600" />
+            <IconComponent className="w-6 h-6 text-teal-600" />
           </div>
         </div>
         <div>

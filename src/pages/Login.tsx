@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signIn } from '../lib/auth';
 
@@ -8,12 +8,13 @@ export default function Login() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const { error } = await signIn(email, password);
     
     if (error) {
-      setError(error.message);
+      const message = error instanceof Error ? error.message : 'Failed to sign in';
+      setError(message);
     } else {
       navigate('/admin/blogs');
     }

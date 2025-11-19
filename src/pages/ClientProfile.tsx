@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { doc, getDoc } from "firebase/firestore";
@@ -9,7 +9,6 @@ import {
   Calendar,
   Scale,
   TrendingDown,
-  TrendingUp,
   Target,
   User,
   MapPin,
@@ -20,7 +19,6 @@ import {
   Zap,
   Award,
   Edit,
-  Save,
   X,
 } from "lucide-react";
 import { MONTHS, getDaysInMonth } from "../lib/months";

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useRequireAuth } from '../lib/auth';
-import { Plus, Edit, Trash2, Save, X, Calendar, Loader2, AlertCircle, Upload, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Loader2, AlertCircle, Upload } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { onAuthStateChanged } from 'firebase/auth';
 import CSVImport from '../components/CSVImport';
@@ -80,13 +80,13 @@ export default function ClientManagement() {
 
         const snapshot = await getDocs(collection(db, 'clients'));
         return snapshot.docs.map(doc => {
-          const data = doc.data() as Client;
+          const data = doc.data() as Omit<Client, 'id'>;
           let weights = data.weights || {};
           if (weights && !MONTHS.some(m => m in weights)) {
             weights = { [MONTHS[0]]: weights as any };
           }
           const status = data.status || 'yet-to-start';
-          return { id: doc.id, ...data, weights, status } as Client;
+          return { ...data, id: doc.id, weights, status } as Client;
         });
       } catch (error) {
         console.error('Error fetching clients:', error);
@@ -177,7 +177,7 @@ export default function ClientManagement() {
     }
   });
 
-  const handleAddClient = (e: React.FormEvent) => {
+  const handleAddClient = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newClient.name || !newClient.startDate || !newClient.startWeight) {
       toast.error('Please fill in all required fields');

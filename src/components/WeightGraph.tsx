@@ -1,4 +1,3 @@
-import React from 'react';
 import { MONTHS } from '../lib/months';
 
 interface WeightGraphProps {

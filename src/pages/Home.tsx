@@ -1,4 +1,3 @@
-import React from 'react';
 import Hero from '../components/Hero';
 import ProgramFeatures from '../components/ProgramFeatures';
 import ClientTestimonials from '../components/ClientTestimonials';

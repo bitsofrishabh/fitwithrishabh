@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Gift, Users } from 'lucide-react';
+import { ChangeEvent, FormEvent, useState } from 'react';
+import { Gift } from 'lucide-react';
 
 interface ReferralFormData {
   name: string;
@@ -20,13 +20,13 @@ export default function Referral() {
     referrerName: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Handle form submission
     console.log('Form submitted:', formData);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value

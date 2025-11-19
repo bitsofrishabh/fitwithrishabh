@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Shield, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 import { PROGRAM_SECTIONS } from '../lib/constants';
 import { motion, useReducedMotion } from 'framer-motion';
 import CloudinaryImage from '../components/CloudinaryImage';

@@ -1,5 +1,5 @@
-import React from 'react';
 import * as Icons from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface ProcessStepProps {
   step: number;
@@ -10,7 +10,7 @@ interface ProcessStepProps {
 }
 
 export default function ProcessStep({ step, title, description, icon, isActive }: ProcessStepProps) {
-  const Icon = Icons[icon as keyof typeof Icons] || Icons.Circle;
+  const IconComponent = (Icons[icon as keyof typeof Icons] as LucideIcon) || Icons.Circle;
 
   return (
     <div className={`flex-1 relative ${isActive ? 'scale-105' : 'opacity-70'}`}>
@@ -21,7 +21,7 @@ export default function ProcessStep({ step, title, description, icon, isActive }
           {step}
         </div>
         <div className={`flex items-center gap-2 mb-2 ${isActive ? 'text-teal-600' : 'text-gray-500'}`}>
-          <Icon className="w-5 h-5" />
+          <IconComponent className="w-5 h-5" />
           <h3 className="text-lg font-semibold">{title}</h3>
         </div>
         <p className="text-gray-600 max-w-xs">{description}</p>

@@ -62,16 +62,16 @@ export const PROGRAM_SECTIONS = {
     'You want to lose weight and keep it off for good.'
   ],
   features: [
-    { title: 'Lose 8-10 Kg in 3 Months!', icon: 'Scale' },
-    { title: 'Personalized Diet Plan From Certified Dietician', icon: 'ClipboardList' },
-    { title: 'Home or Gym Workout Plan', icon: 'Dumbbell' },
-    { title: 'Home-Based Food Only', icon: 'Home' },
-    { title: 'Sustainable and Holistic Approach', icon: 'Sprout' },
-    { title: 'Daily Tracking of Food with Certified Dietician', icon: 'LineChart' },
-    { title: 'Unlimited Support on Calls or WhatsApp', icon: 'MessageCircle' },
-    { title: 'Easy to Make Recipes E-book', icon: 'Book' },
-    { title: 'No Supplements, No Detox', icon: 'Ban' },
-    { title: '100% Refund If No Weight-Loss', icon: 'BadgeCheck' }
+    { title: 'Lose 8-10 Kg in 3 Months!', icon: 'Scale', description: 'Structured protocols tailored to your metabolism to deliver measurable results.' },
+    { title: 'Personalized Diet Plan From Certified Dietician', icon: 'ClipboardList', description: 'Meals are designed around your routine, preferences, and nutritional gaps.' },
+    { title: 'Home or Gym Workout Plan', icon: 'Dumbbell', description: 'Choose guided workouts that fit your environment and equipment access.' },
+    { title: 'Home-Based Food Only', icon: 'Home', description: 'No fancy ingredients—just wholesome food you can cook in your kitchen.' },
+    { title: 'Sustainable and Holistic Approach', icon: 'Sprout', description: 'We address sleep, stress, and routines to make healthy living effortless.' },
+    { title: 'Daily Tracking of Food with Certified Dietician', icon: 'LineChart', description: 'Share your meals for actionable feedback and course corrections.' },
+    { title: 'Unlimited Support on Calls or WhatsApp', icon: 'MessageCircle', description: 'Reach out anytime for motivation, troubleshooting, or accountability.' },
+    { title: 'Easy to Make Recipes E-book', icon: 'Book', description: 'Access dozens of simple, macro-balanced recipes for every meal.' },
+    { title: 'No Supplements, No Detox', icon: 'Ban', description: 'We rely on real food, good habits, and science-backed strategies only.' },
+    { title: '100% Refund If No Weight-Loss', icon: 'BadgeCheck', description: 'We believe in our process so much that we guarantee your progress.' }
   ],
   process: [
     {

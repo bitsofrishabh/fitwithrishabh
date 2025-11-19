@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ShoppingBag, Star, Search } from 'lucide-react';
 
 const products = [

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calendar, Clock, Video, Users } from 'lucide-react';
 
 export default function Schedule() {

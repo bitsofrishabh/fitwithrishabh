@@ -1,8 +1,10 @@
 import { Cloudinary } from '@cloudinary/url-gen';
 
+const cloudName = 'djdej77pl';
+
 export const cld = new Cloudinary({
   cloud: {
-    cloudName: 'djdej77pl'
+    cloudName
   }
 });
 
@@ -12,7 +14,7 @@ export async function uploadImage(file: File) {
   formData.append('upload_preset', 'blog_images');
 
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${cld.config.cloud.cloudName}/image/upload`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
     {
       method: 'POST',
       body: formData

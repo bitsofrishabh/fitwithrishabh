@@ -1,9 +1,43 @@
-import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import CloudinaryImage from './CloudinaryImage';
 
-const transformations = [
-  // ... existing transformations array
+type Transformation = {
+  id: string;
+  publicId: string;
+  alt: string;
+};
+
+const transformations: Transformation[] = [
+  {
+    id: 'transformation-1',
+    publicId: 'program/real-food_xkj2mq',
+    alt: 'Client preparing nourishing home-cooked meals'
+  },
+  {
+    id: 'transformation-2',
+    publicId: 'program/accountability_yw3nxp',
+    alt: 'Coach providing daily accountability and support'
+  },
+  {
+    id: 'transformation-3',
+    publicId: 'program/habit-change_kl4mxr',
+    alt: 'Tracking sustainable, healthy habit changes'
+  },
+  {
+    id: 'transformation-4',
+    publicId: 'program/personalized_pq2nxs',
+    alt: 'Personalized plans tailored to each client'
+  },
+  {
+    id: 'transformation-5',
+    publicId: 'program/accountability_yw3nxp',
+    alt: 'Celebrating client progress together'
+  },
+  {
+    id: 'transformation-6',
+    publicId: 'program/real-food_xkj2mq',
+    alt: 'Balanced nutrition fueling daily energy'
+  }
 ];
 
 export default function TestimonialGallery() {
