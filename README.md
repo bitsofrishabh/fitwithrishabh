@@ -22,8 +22,11 @@ Lint the project with:
 npm run lint
 ```
 
-### Notes on admin tooling
+### Current scope
 
-The original Firebase-backed admin tools have been replaced with demo-friendly, local data (see
-`src/data/sampleClients.ts`). Update this file with your own success stories to customise the
-client-management pages without needing any backend infrastructure.
+The app now intentionally ships with **only two pages**:
+
+- `/` (and `/workout-section`) – the workout library
+- `/products` – curated product recommendations
+
+All previous admin/auth flows were removed to keep the experience lean and content-focused.
