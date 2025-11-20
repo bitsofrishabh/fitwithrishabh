@@ -22,17 +22,8 @@ Lint the project with:
 npm run lint
 ```
 
-### Environment variables
+### Notes on admin tooling
 
-Firebase is required for authentication and client management. Create a `.env` file (or configure the variables in your deployment platform such as Netlify) using the keys listed in `.env.example`:
-
-```
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_STORAGE_BUCKET=...
-VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=...
-```
-
-If any of these values are missing at build time, the app now surfaces a descriptive error to help you spot misconfigured environments instead of failing with the generic `auth/invalid-api-key` message.
+The original Firebase-backed admin tools have been replaced with demo-friendly, local data (see
+`src/data/sampleClients.ts`). Update this file with your own success stories to customise the
+client-management pages without needing any backend infrastructure.

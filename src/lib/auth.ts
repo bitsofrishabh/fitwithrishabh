@@ -1,65 +1,28 @@
-import { auth } from './firebase';
-import { 
-  signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  User
-} from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+/**
+ * Firebase authentication has been removed from the project.
+ * These lightweight helpers allow existing UI (login buttons etc.)
+ * to function without hitting any backend.
+ */
 
 export async function signIn(email: string, password: string) {
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return { data: userCredential.user, error: null };
-  } catch (error) {
-    return { data: null, error };
+  if (!email || !password) {
+    return { data: null, error: new Error('Please provide both email and password.') };
   }
+  return { data: { email }, error: null };
 }
 
-export async function signUp(email: string, password: string) {
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    return { data: userCredential.user, error: null };
-  } catch (error) {
-    return { data: null, error };
-  }
+export async function signUp() {
+  return { data: null, error: new Error('Sign up is disabled in the demo build.') };
 }
 
 export async function signOut() {
-  try {
-    await firebaseSignOut(auth);
-    return { error: null };
-  } catch (error) {
-    return { error };
-  }
+  return { error: null };
 }
 
-export function useRequireAuth(redirectTo = '/login') {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigate(redirectTo);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [navigate, redirectTo]);
+export function useRequireAuth() {
+  // No-op now that authentication is disabled.
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  return { user };
+  return { user: null };
 }

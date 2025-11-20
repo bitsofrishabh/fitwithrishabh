@@ -16,7 +16,7 @@ export default function Login() {
       const message = error instanceof Error ? error.message : 'Failed to sign in';
       setError(message);
     } else {
-      navigate('/admin/blogs');
+      navigate('/admin/clients');
     }
   };
 
