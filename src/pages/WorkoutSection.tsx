@@ -498,35 +498,54 @@ export default function WorkoutSection() {
 
         {/* Video Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredVideos.map(video => (
-            <div key={video.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="relative aspect-video">
-                <iframe
-                  src={video.url}
-                  title={video.title}
-                  className="absolute inset-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xl font-semibold">{video.title}</h3>
-                  <span className="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm">
-                    {video.category}
-                  </span>
+          {filteredVideos.map(video => {
+            const videoId = video.url.split('/embed/')[1] || '';
+            const thumbnail = videoId
+              ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+              : '';
+
+            return (
+              <div key={video.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div className="relative aspect-video">
+                  {thumbnail ? (
+                    <img
+                      src={thumbnail}
+                      alt={video.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gray-200" />
+                  )}
+                  <div className="absolute inset-0 bg-black/20" />
+                  <button
+                    type="button"
+                    onClick={() => setActiveVideo(video)}
+                    className="absolute inset-0 flex items-center justify-center"
+                    aria-label={`Play ${video.title}`}
+                  >
+                    <Play className="w-12 h-12 text-white drop-shadow-lg" />
+                  </button>
                 </div>
-                <p className="text-gray-600 mb-4">{video.description}</p>
-                <button
-                  onClick={() => setActiveVideo(video)}
-                  className="flex items-center gap-2 text-teal-600 font-semibold hover:text-teal-700"
-                >
-                  <Play className="w-5 h-5" />
-                  Watch Now
-                </button>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xl font-semibold">{video.title}</h3>
+                    <span className="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm">
+                      {video.category}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 mb-4">{video.description}</p>
+                  <button
+                    onClick={() => setActiveVideo(video)}
+                    className="flex items-center gap-2 text-teal-600 font-semibold hover:text-teal-700"
+                  >
+                    <Play className="w-5 h-5" />
+                    Watch Now
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {filteredVideos.length === 0 && (
@@ -544,6 +563,8 @@ export default function WorkoutSection() {
                   src={activeVideo.url}
                   title={activeVideo.title}
                   className="absolute inset-0 w-full h-full rounded-t-xl"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
